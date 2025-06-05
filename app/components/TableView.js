@@ -339,7 +339,7 @@ export default function TableView({
                 {!showAddForm ? (
                     <button
                         onClick={() => setShowAddForm(true)}
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium"
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium cursor-pointer"
                     >
                         + Add New Person
                     </button>
@@ -349,7 +349,7 @@ export default function TableView({
                             <h3 className="text-lg font-semibold">Add New Person</h3>
                             <button
                                 onClick={() => setShowAddForm(false)}
-                                className="text-gray-500 hover:text-gray-700 text-xl"
+                                className="text-gray-500 hover:text-gray-700 text-xl cursor-pointer"
                             >
                                 ×
                             </button>
@@ -621,14 +621,14 @@ export default function TableView({
                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="submit"
-                                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded font-medium"
+                                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded font-medium cursor-pointer"
                                 >
                                     Add Person
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setShowAddForm(false)}
-                                    className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded font-medium"
+                                    className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded font-medium cursor-pointer"
                                 >
                                     Cancel
                                 </button>
@@ -650,7 +650,7 @@ export default function TableView({
                                         setSortBy('name-asc');
                                     }
                                 }}
-                                className="flex items-center gap-1 hover:text-blue-700"
+                                className="flex items-center gap-1 hover:text-blue-700 cursor-pointer"
                             >
                                 Name
                                 {sortBy === 'name-asc' && <span className="text-blue-600">↑</span>}
@@ -669,7 +669,7 @@ export default function TableView({
                                         setSortBy('date-asc');
                                     }
                                 }}
-                                className="flex items-center gap-1 hover:text-blue-700"
+                                className="flex items-center gap-1 hover:text-blue-700 cursor-pointer"
                             >
                                 Date Met
                                 {sortBy === 'date-asc' && <span className="text-blue-600">↑</span>}
@@ -809,10 +809,10 @@ export default function TableView({
                                     </select>
                                 </td>
                                 <td className="p-2 border-b">
-                                    <button className="text-purple-500" onClick={() => setSelectedPersonId(selectedPersonId === person.id ? null : person.id)}>
+                                    <button className="text-purple-500 cursor-pointer" onClick={() => setSelectedPersonId(selectedPersonId === person.id ? null : person.id)}>
                                         {selectedPersonId === person.id ? 'Close' : 'View'}
                                     </button>
-                                    <button className="text-red-600 ml-2" onClick={() => handleDeletePerson(person)}>
+                                    <button className="text-red-600 ml-2 cursor-pointer" onClick={() => handleDeletePerson(person)}>
                                         Delete
                                     </button>
                                 </td>
@@ -1027,7 +1027,7 @@ export default function TableView({
                                                             />
                                                         ) : (
                                                             <button
-                                                                className="text-sm text-gray-600 hover:text-blue-600 hover:underline min-w-max"
+                                                                className="text-sm text-gray-600 hover:text-blue-600 hover:underline min-w-max cursor-pointer"
                                                                 onClick={() => handleDateEditStart(person.id, i)}
                                                                 title="Click to edit date"
                                                             >
@@ -1036,7 +1036,7 @@ export default function TableView({
                                                         )}
                                                         <button
                                                             onClick={() => handleInteractionRemove(person.id, i)}
-                                                            className="text-red-600 hover:text-red-800 px-2 py-1 rounded"
+                                                            className="text-red-600 hover:text-red-800 px-2 py-1 rounded cursor-pointer"
                                                             title="Remove interaction"
                                                         >
                                                             ×
@@ -1046,7 +1046,7 @@ export default function TableView({
                                             </ul>
                                             <button
                                                 onClick={() => handleInteractionAdd(person.id)}
-                                                className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                                className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
                                             >
                                                 + Add New Interaction
                                             </button>
