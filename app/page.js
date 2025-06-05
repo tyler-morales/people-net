@@ -108,7 +108,7 @@ export default function Home() {
       />
 
       <header className="my-4">
-        <div>
+                <div>
           <h1 className="text-4xl font-bold">🌐 PeopleNet</h1>
           <h2 className="text-lg text-gray-600">
             {activeTab === 'table'
@@ -122,7 +122,7 @@ export default function Home() {
               : `${people.length} contact${people.length === 1 ? '' : 's'} in your network`
             }
           </p>
-        </div>
+                </div>
       </header>
 
       {/* Render content based on active tab */}
@@ -135,8 +135,8 @@ export default function Home() {
           handleFieldFocus={handleFieldFocus}
           originalValues={originalValues}
           setOriginalValues={setOriginalValues}
-        />
-      ) : (
+                    />
+                  ) : (
         <GraphView people={people} />
       )}
 
