@@ -9,6 +9,7 @@ import GraphView from "./components/GraphView";
 import GlobeView from "./components/GlobeView";
 import QuickNote from "./components/QuickNote";
 import Toast from "./components/Toast";
+import ApiUsageMonitor from "./components/ui/ApiUsageMonitor";
 
 export default function Home() {
   const [people, setPeople] = useState([]);
@@ -163,6 +164,9 @@ export default function Home() {
 
       {/* Toast Notification */}
       <Toast toast={toast} onClose={hideToast} />
+
+      {/* API Usage Monitor */}
+      <ApiUsageMonitor />
     </main>
   );
 }

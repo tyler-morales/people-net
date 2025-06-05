@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import SearchableDropdown from './SearchableDropdown';
 import MultiSelectDropdown from './MultiSelectDropdown';
+import DynamicMultiSelectCity from './DynamicMultiSelectCity';
 
 // Select Filter Component (keeping for connection strength/type since they have fixed options)
 export function SelectFilter({
@@ -155,14 +156,12 @@ export default function ColumnFilters({
                     allowCustom={true}
                 />
 
-                <MultiSelectDropdown
+                <DynamicMultiSelectCity
                     values={columnFilters.location}
                     onChange={(values) => updateColumnFilter('location', values)}
-                    options={getUniqueValues('location')}
-                    placeholder="Search locations..."
+                    placeholder="Search cities..."
                     label="Location"
                     onClear={() => clearFilter('location')}
-                    allowCustom={true}
                 />
 
                 <SelectFilter

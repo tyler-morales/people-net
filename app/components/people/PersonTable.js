@@ -1,4 +1,16 @@
 import { useState } from 'react';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import SortableHeader from '../ui/SortableHeader';
 import ConnectionStrengthTooltip from '../ui/ConnectionStrengthTooltip';
 import SelectionCheckbox from '../ui/SelectionCheckbox';
@@ -7,11 +19,14 @@ import GlobalSearch from '../ui/GlobalSearch';
 import ColumnFilters from '../ui/ColumnFilters';
 import FilterStatusBar from '../ui/FilterStatusBar';
 import FilterPresets from '../ui/FilterPresets';
-import PersonRow from './PersonRow';
+import DraggableTableHeader from '../ui/DraggableTableHeader';
+import DynamicPersonRow from './DynamicPersonRow';
 import { usePeopleSort } from '../../hooks/people/usePeopleSort';
 import { usePersonEditor } from '../../hooks/people/usePersonEditor';
 import { useBatchSelection } from '../../hooks/people/useBatchSelection';
 import { useTableFilters } from '../../hooks/people/useTableFilters';
+import { useColumnOrdering } from '../../hooks/people/useColumnOrdering';
+import ColumnReorderNotification from '../ui/ColumnReorderNotification';
 
 export default function PersonTable({
     people,
@@ -24,6 +39,15 @@ export default function PersonTable({
 }) {
     const [selectedPersonId, setSelectedPersonId] = useState(null);
     const [showColumnFilters, setShowColumnFilters] = useState(false);
+
+    // Column ordering hook
+    const {
+        columnOrder,
+        handleColumnReorder,
+        resetColumnOrder,
+        isDefaultColumnOrder,
+        hasReorderedThisSession
+    } = useColumnOrdering();
 
     // Use our new filtering hook
     const {
@@ -61,6 +85,26 @@ export default function PersonTable({
         clearSelection,
         isSelected
     } = useBatchSelection(sortedPeople);
+
+    // Drag and drop sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor)
+    );
+
+    // Handle drag end
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            handleColumnReorder(active.id, over.id);
+            showToast('Column order updated!', 'success');
+        }
+    };
 
     // Handler for loading filter presets
     const handleLoadPreset = (search, filters) => {
@@ -327,77 +371,93 @@ export default function PersonTable({
                 onClearSelection={clearSelection}
             />
 
-            <table className="w-full table-auto border border-black mb-4">
-                <thead>
-                    <tr className="bg-blue-100">
-                        <th className="text-left p-2 border-b w-12">
-                            <SelectionCheckbox
-                                checked={isAllSelected}
-                                indeterminate={isIndeterminate}
-                                onChange={toggleSelectAll}
-                                aria-label="Select all people"
+            {/* Column Controls - only show reset button if columns have been reordered */}
+            {!isDefaultColumnOrder && (
+                <div className="mb-4 flex items-center justify-end">
+                    <button
+                        onClick={() => {
+                            resetColumnOrder();
+                            showToast('Column order reset to default', 'success');
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                        Reset to Default Order
+                    </button>
+                </div>
+            )}
+
+            {/* Column Reorder Notification */}
+            <ColumnReorderNotification
+                show={hasReorderedThisSession && !isDefaultColumnOrder}
+            />
+
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+            >
+                <table className="w-full table-auto border border-black mb-4">
+                    <thead>
+                        <SortableContext
+                            items={columnOrder.map(col => col.id)}
+                            strategy={horizontalListSortingStrategy}
+                        >
+                            <tr className="bg-blue-100">
+                                {columnOrder.map((column) => (
+                                    <DraggableTableHeader
+                                        key={column.id}
+                                        column={column}
+                                        currentSort={sortBy}
+                                        onSortChange={setSortBy}
+                                        // Selection props (for select column)
+                                        checked={isAllSelected}
+                                        indeterminate={isIndeterminate}
+                                        onChange={toggleSelectAll}
+                                    />
+                                ))}
+                            </tr>
+                        </SortableContext>
+                    </thead>
+                    <tbody>
+                        {sortedPeople.map((person, index) => (
+                            <DynamicPersonRow
+                                key={person.id}
+                                person={person}
+                                index={index}
+                                people={people}
+                                selectedPersonId={selectedPersonId}
+                                setSelectedPersonId={setSelectedPersonId}
+                                editingField={editingField}
+                                handleInlineEdit={(personId, field) =>
+                                    handleInlineEdit(personId, field, handleFieldFocus, people)
+                                }
+                                handleInlineBlur={(e, id, fieldName) =>
+                                    handleInlineBlur(e, id, fieldName, handleEditBlur)
+                                }
+                                handleEditChange={handleEditChange}
+                                handleFieldFocus={handleFieldFocus}
+                                handleDeletePerson={handleDeletePerson}
+                                showToast={showToast}
+                                // Selection props
+                                isSelected={isSelected(person.id)}
+                                onToggleSelect={() => toggleSelectPerson(person.id)}
+                                // Person details props
+                                handleInteractionChange={handleInteractionChange}
+                                handleInteractionAdd={handleInteractionAdd}
+                                handleInteractionRemove={handleInteractionRemove}
+                                handleDateEditStart={handleDateEditStart}
+                                editingDateId={editingDateId}
+                                handleInteractionDateChange={handleInteractionDateChange}
+                                setEditingDateId={setEditingDateId}
+                                originalValues={originalValues}
+                                setOriginalValues={setOriginalValues}
+                                // Column ordering
+                                columnOrder={columnOrder}
                             />
-                        </th>
-                        <SortableHeader
-                            sortKey="name"
-                            currentSort={sortBy}
-                            onSortChange={setSortBy}
-                        >
-                            Name
-                        </SortableHeader>
-                        <th className="text-left p-2 border-b">Company</th>
-                        <th className="text-left p-2 border-b">Role</th>
-                        <SortableHeader
-                            sortKey="date"
-                            currentSort={sortBy}
-                            onSortChange={setSortBy}
-                        >
-                            Date Met
-                        </SortableHeader>
-                        <th className="text-left p-2 border-b">
-                            Connection Strength
-                            <ConnectionStrengthTooltip />
-                        </th>
-                        <th className="text-left p-2 border-b">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {sortedPeople.map((person, index) => (
-                        <PersonRow
-                            key={person.id}
-                            person={person}
-                            index={index}
-                            people={people}
-                            selectedPersonId={selectedPersonId}
-                            setSelectedPersonId={setSelectedPersonId}
-                            editingField={editingField}
-                            handleInlineEdit={(personId, field) =>
-                                handleInlineEdit(personId, field, handleFieldFocus, people)
-                            }
-                            handleInlineBlur={(e, id, fieldName) =>
-                                handleInlineBlur(e, id, fieldName, handleEditBlur)
-                            }
-                            handleEditChange={handleEditChange}
-                            handleFieldFocus={handleFieldFocus}
-                            handleDeletePerson={handleDeletePerson}
-                            showToast={showToast}
-                            // Selection props
-                            isSelected={isSelected(person.id)}
-                            onToggleSelect={() => toggleSelectPerson(person.id)}
-                            // Person details props
-                            handleInteractionChange={handleInteractionChange}
-                            handleInteractionAdd={handleInteractionAdd}
-                            handleInteractionRemove={handleInteractionRemove}
-                            handleDateEditStart={handleDateEditStart}
-                            editingDateId={editingDateId}
-                            handleInteractionDateChange={handleInteractionDateChange}
-                            setEditingDateId={setEditingDateId}
-                            originalValues={originalValues}
-                            setOriginalValues={setOriginalValues}
-                        />
-                    ))}
-                </tbody>
-            </table>
+                        ))}
+                    </tbody>
+                </table>
+            </DndContext>
 
             {/* No results message */}
             {sortedPeople.length === 0 && people.length > 0 && (

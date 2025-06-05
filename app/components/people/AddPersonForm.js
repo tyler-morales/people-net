@@ -1,5 +1,6 @@
 import ConnectionStrengthSelector from '../ui/ConnectionStrengthSelector';
 import FormDropdown from '../ui/FormDropdown';
+import DynamicCityPicker from '../ui/DynamicCityPicker';
 import { commonCities } from '../../lib/city-data';
 
 export default function AddPersonForm({
@@ -116,13 +117,14 @@ export default function AddPersonForm({
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Location
                         </label>
-                        <FormDropdown
+                        <DynamicCityPicker
                             name="location"
                             value={newPerson.location}
                             onChange={handleChange}
-                            options={getLocationOptions()}
-                            placeholder="Enter or select location"
+                            placeholder="Search for a city..."
                             className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+                            showCountryInfo={true}
+                            showPopulation={false}
                         />
                     </div>
 

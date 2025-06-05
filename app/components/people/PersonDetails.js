@@ -1,5 +1,6 @@
 import InteractionsList from './InteractionsList';
 import FormDropdown from '../ui/FormDropdown';
+import DynamicCityPicker from '../ui/DynamicCityPicker';
 import { commonCities } from '../../lib/city-data';
 
 export default function PersonDetails({
@@ -82,15 +83,16 @@ export default function PersonDetails({
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                    <FormDropdown
+                    <DynamicCityPicker
                         name="location"
                         value={person.location || ''}
                         onChange={(e) => handleEditChange(e, person.id)}
                         onFocus={(e) => handleFieldFocus(person.id, 'location', e.target.value)}
                         onBlur={(e) => handleInlineBlur(e, person.id, 'location')}
-                        options={getLocationOptions()}
-                        placeholder="Enter or select location"
+                        placeholder="Search for a city..."
                         className="w-full border border-gray-300 rounded px-3 py-2"
+                        showCountryInfo={true}
+                        showPopulation={false}
                     />
                 </div>
 
