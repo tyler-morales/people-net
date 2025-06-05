@@ -6,6 +6,7 @@ import { useUndo } from "./hooks/useUndo";
 import TabNavigation from "./components/TabNavigation";
 import TableView from "./components/TableView";
 import GraphView from "./components/GraphView";
+import QuickNote from "./components/QuickNote";
 import Toast from "./components/Toast";
 
 export default function Home() {
@@ -138,6 +139,14 @@ export default function Home() {
       ) : (
         <GraphView people={people} />
       )}
+
+      {/* Floating Quick Note Button */}
+      <QuickNote
+        people={people}
+        setPeople={setPeople}
+        showToast={showToast}
+        saveUndoState={saveUndoState}
+      />
 
       {/* Toast Notification */}
       <Toast toast={toast} onClose={hideToast} />

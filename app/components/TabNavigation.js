@@ -6,8 +6,8 @@ export default function TabNavigation({ activeTab, setActiveTab, canUndo }) {
             <button
                 onClick={() => setActiveTab('table')}
                 className={`pb-2 px-1 border-b-2 transition-colors ${activeTab === 'table'
-                        ? 'border-blue-500 text-blue-600 font-semibold'
-                        : 'border-transparent text-gray-600 hover:text-gray-800'
+                    ? 'border-blue-500 text-blue-600 font-semibold'
+                    : 'border-transparent text-gray-600 hover:text-gray-800'
                     }`}
             >
                 🗒️ Table
@@ -15,8 +15,8 @@ export default function TabNavigation({ activeTab, setActiveTab, canUndo }) {
             <button
                 onClick={() => setActiveTab('graph')}
                 className={`pb-2 px-1 border-b-2 transition-colors ${activeTab === 'graph'
-                        ? 'border-blue-500 text-blue-600 font-semibold'
-                        : 'border-transparent text-gray-600 hover:text-gray-800'
+                    ? 'border-blue-500 text-blue-600 font-semibold'
+                    : 'border-transparent text-gray-600 hover:text-gray-800'
                     }`}
             >
                 🕸️ Graph
