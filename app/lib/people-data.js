@@ -155,7 +155,7 @@ export const initialPeople = [
         connection: {
             source: "you",
             type: "mentored",
-            strength: "strong",
+            strength: "core",
             notes: "Dev designer unicorn",
             introducedBy: null,
             introducedByName: null,
@@ -176,7 +176,7 @@ export const initialPeople = [
         connection: {
             source: "you",
             type: "inspired_me",
-            strength: "strong",
+            strength: "core",
             notes: "",
             introducedBy: "",
             introducedByName: "",

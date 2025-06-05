@@ -16,6 +16,7 @@ export default function Home() {
   const [nodes, setNodes] = useState([]);
   const [links, setLinks] = useState([]);
   const [graphFilter, setGraphFilter] = useState('all'); // New filter state
+  const [strengthFilter, setStrengthFilter] = useState(0); // 0 = show all, 1-6 = filter by strength
 
   // Toast notification state
   const [toast, setToast] = useState(null);
@@ -51,6 +52,43 @@ export default function Home() {
     },
     interactions: []
   });
+
+  // Helper functions for connection strength
+  const strengthToNumber = (strength) => {
+    const strengthMap = {
+      'fleeting': 1,
+      'acquaintance': 2,
+      'casual': 3,
+      'working': 4,
+      'strong': 5,
+      'core': 6
+    };
+    return strengthMap[strength] || 3;
+  };
+
+  const numberToStrength = (number) => {
+    const numberMap = {
+      1: 'fleeting',
+      2: 'acquaintance',
+      3: 'casual',
+      4: 'working',
+      5: 'strong',
+      6: 'core'
+    };
+    return numberMap[number] || 'casual';
+  };
+
+  const getStrengthLabel = (strength) => {
+    const labelMap = {
+      'fleeting': 'Fleeting (1)',
+      'acquaintance': 'Acquaintance (2)',
+      'casual': 'Casual (3)',
+      'working': 'Working (4)',
+      'strong': 'Strong (5)',
+      'core': 'Core (6)'
+    };
+    return labelMap[strength] || 'Casual (3)';
+  };
 
   // Graph calculation effect (moved from graph page)
   useEffect(() => {
@@ -157,12 +195,12 @@ export default function Home() {
 
   function getNodeColor(strength) {
     const colorMap = {
-      'fleeting': '#ef4444',
-      'acquaintance': '#f97316',
-      'casual': '#f59e0b',
-      'working': '#10b981',
-      'strong': '#3b82f6',
-      'core': '#8b5cf6'
+      'fleeting': '#6366f1',      // Cold - Indigo (1)
+      'acquaintance': '#3b82f6',  // Cool - Blue (2) 
+      'casual': '#10b981',        // Cool-Neutral - Green (3)
+      'working': '#f59e0b',       // Warm-Neutral - Yellow (4)
+      'strong': '#f97316',        // Warm - Orange (5)
+      'core': '#ef4444'           // Hot - Red (6)
     };
     return colorMap[strength] || '#6b7280';
   }
@@ -658,19 +696,36 @@ export default function Home() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Connection Strength
                   </label>
-                  <select
-                    name="connection.strength"
-                    value={newPerson.connection.strength}
-                    onChange={handleNewPersonChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="fleeting">Fleeting (1)</option>
-                    <option value="acquaintance">Acquaintance (2)</option>
-                    <option value="casual">Casual (3)</option>
-                    <option value="working">Working (4)</option>
-                    <option value="strong">Strong (5)</option>
-                    <option value="core">Core (6)</option>
-                  </select>
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      name="connection.strength"
+                      min="1"
+                      max="6"
+                      value={strengthToNumber(newPerson.connection.strength)}
+                      onChange={(e) => {
+                        const strengthName = numberToStrength(parseInt(e.target.value));
+                        handleNewPersonChange({
+                          target: { name: 'connection.strength', value: strengthName }
+                        });
+                      }}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                      style={{
+                        background: `linear-gradient(to right, #ef4444 0%, #f97316 20%, #f59e0b 40%, #10b981 60%, #3b82f6 80%, #8b5cf6 100%)`
+                      }}
+                    />
+                    <div className="text-center text-sm font-medium text-gray-700">
+                      {getStrengthLabel(newPerson.connection.strength)}
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Fleeting</span>
+                      <span>Acquaintance</span>
+                      <span>Casual</span>
+                      <span>Working</span>
+                      <span>Strong</span>
+                      <span>Core</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -1226,20 +1281,44 @@ export default function Home() {
       {/* Graph */}
       <div className="flex-1">
         {/* Filter Controls */}
-        <div className="mb-4 flex items-center gap-4">
-          <label className="text-sm font-medium text-gray-700">
-            Connection View:
-          </label>
-          <select
-            value={graphFilter}
-            onChange={(e) => setGraphFilter(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-1 text-sm"
-          >
-            <option value="all">All Connections</option>
-            <option value="direct">Direct Only</option>
-            <option value="introduced">Through Others</option>
-            <option value="external">External Introductions</option>
-          </select>
+        <div className="mb-4 flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-medium text-gray-700">
+              Connection View:
+            </label>
+            <select
+              value={graphFilter}
+              onChange={(e) => setGraphFilter(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-1 text-sm"
+            >
+              <option value="all">All Connections</option>
+              <option value="direct">Direct Only</option>
+              <option value="introduced">Through Others</option>
+              <option value="external">External Introductions</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-4 flex-1">
+            <label className="text-sm font-medium text-gray-700">
+              Filter by Strength:
+            </label>
+            <div className="flex-1 max-w-xs space-y-1">
+              <input
+                type="range"
+                min="0"
+                max="6"
+                value={strengthFilter}
+                onChange={(e) => setStrengthFilter(parseInt(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #6366f1 0%, #3b82f6 16.67%, #10b981 33.33%, #f59e0b 50%, #f97316 66.67%, #ef4444 83.33%, #dc2626 100%)`
+                }}
+              />
+              <div className="text-center text-xs font-medium text-gray-600">
+                {strengthFilter === 0 ? 'Showing All' : getStrengthLabel(numberToStrength(strengthFilter))}
+              </div>
+            </div>
+          </div>
         </div>
 
         <svg
@@ -1267,6 +1346,13 @@ export default function Home() {
 
             let stroke = "#6b7280";
             let strokeDasharray = "none";
+            let opacity = 0.6;
+
+            // Apply strength filter opacity
+            if (strengthFilter > 0) {
+              const targetStrengthNum = strengthToNumber(targetNode?.strength);
+              opacity = targetStrengthNum === strengthFilter ? 0.8 : 0.1;
+            }
 
             if (link.strokeStyle === 'dashed') {
               strokeDasharray = "8,4";
@@ -1284,35 +1370,45 @@ export default function Home() {
                 stroke={stroke}
                 strokeWidth={link.strokeWidth}
                 strokeDasharray={strokeDasharray}
-                opacity={0.6}
+                opacity={opacity}
               />
             );
           })}
 
           {/* Nodes */}
-          {nodes.map((node) => (
-            <g key={node.id}>
-              <circle
-                cx={node.x}
-                cy={node.y}
-                r={node.radius}
-                fill={node.color}
-                stroke={selectedNode?.id === node.id ? '#000' : '#fff'}
-                strokeWidth={selectedNode?.id === node.id ? 3 : 2}
-                className="cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => handleNodeClick(node)}
-              />
-              <text
-                x={node.x}
-                y={node.y + node.radius + 15}
-                textAnchor="middle"
-                className="text-sm font-medium fill-gray-700"
-                style={{ pointerEvents: 'none' }}
-              >
-                {node.name}
-              </text>
-            </g>
-          ))}
+          {nodes.map((node) => {
+            let nodeOpacity = 1;
+
+            // Apply strength filter opacity to nodes (except "you")
+            if (strengthFilter > 0 && node.id !== 'you') {
+              const nodeStrengthNum = strengthToNumber(node.strength);
+              nodeOpacity = nodeStrengthNum === strengthFilter ? 1 : 0.2;
+            }
+
+            return (
+              <g key={node.id} opacity={nodeOpacity}>
+                <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={node.radius}
+                  fill={node.color}
+                  stroke={selectedNode?.id === node.id ? '#000' : '#fff'}
+                  strokeWidth={selectedNode?.id === node.id ? 3 : 2}
+                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => handleNodeClick(node)}
+                />
+                <text
+                  x={node.x}
+                  y={node.y + node.radius + 15}
+                  textAnchor="middle"
+                  className="text-sm font-medium fill-gray-700"
+                  style={{ pointerEvents: 'none' }}
+                >
+                  {node.name}
+                </text>
+              </g>
+            );
+          })}
         </svg>
       </div>
 
@@ -1342,12 +1438,12 @@ export default function Home() {
           <h3 className="font-semibold mb-3">Connection Strength</h3>
           <div className="space-y-2">
             {[
-              { name: 'Fleeting', color: '#ef4444' },
-              { name: 'Acquaintance', color: '#f97316' },
-              { name: 'Casual', color: '#f59e0b' },
-              { name: 'Working', color: '#10b981' },
-              { name: 'Strong', color: '#3b82f6' },
-              { name: 'Core', color: '#8b5cf6' }
+              { name: 'Fleeting', color: '#6366f1' },
+              { name: 'Acquaintance', color: '#3b82f6' },
+              { name: 'Casual', color: '#10b981' },
+              { name: 'Working', color: '#f59e0b' },
+              { name: 'Strong', color: '#f97316' },
+              { name: 'Core', color: '#ef4444' }
             ].map((item) => (
               <div key={item.name} className="flex items-center gap-2">
                 <div
@@ -1440,6 +1536,51 @@ export default function Home() {
 
   return (
     <main className="">
+      {/* CSS for custom slider styling */}
+      <style jsx>{`
+        input[type="range"] {
+          -webkit-appearance: none;
+          appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 2px solid #374151;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+          border-color: #1f2937;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 2px solid #374151;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        input[type="range"]::-moz-range-thumb:hover {
+          border-color: #1f2937;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        input[type="range"]::-moz-range-track {
+          height: 6px;
+          border-radius: 3px;
+        }
+      `}</style>
+
       {/* Tab Navigation */}
       <div className="mt-2 flex gap-4 border-b border-gray-300">
         <button
