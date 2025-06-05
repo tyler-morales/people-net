@@ -1,3 +1,5 @@
+import { getTimezoneFromLocation } from '../utils/timezone-utils';
+
 export const initialPeople = [
     {
         id: "niranjan",
@@ -5,7 +7,7 @@ export const initialPeople = [
         team: "",
         company: "Accenture",
         location: "Philadelphia, PA, USA",
-        workHours: "9:30 PM – 6:30 AM",
+        workHours: "EST",
         role: "Hiring Manager / Client Account",
         notes: "Very knowledgeable of codebase",
         interactions: [
@@ -28,7 +30,7 @@ export const initialPeople = [
         team: "",
         company: "Accenture",
         location: "Bangalore, India",
-        workHours: "9:30 PM – 6:30 AM",
+        workHours: "IST",
         role: "Developer",
         notes: "Very knowledgeable of codebase",
         interactions: [
@@ -51,7 +53,7 @@ export const initialPeople = [
         team: "",
         company: "Comcast",
         location: "Denver, CO, USA",
-        workHours: "",
+        workHours: "MST",
         role: "Eng 1, Eng Ops, Tech & Product, Global Tech Org",
         notes: "Handles laptop deployments",
         interactions: [
@@ -74,7 +76,7 @@ export const initialPeople = [
         team: "",
         company: "Accenture (Davinci)",
         location: "Pune, India",
-        workHours: "11:00 AM – 9:30/10 PM",
+        workHours: "IST",
         role: "React Front-End Developer",
         notes: "First Davinci team member; Windows laptop",
         interactions: [
@@ -97,7 +99,7 @@ export const initialPeople = [
         team: "Buy Flow",
         company: "Comcast",
         location: "Philadelphia, PA, USA",
-        workHours: "10:00 AM – 6:00 PM EST",
+        workHours: "EST",
         role: "Manager, Buy Flow Department",
         notes: "Manages the purchase flow with 5 package types (User, Agent for internal Comcast employees). Leads 4 dev teams (~10 devs each) with 11 direct Xfinity reports. Hosts biweekly team syncs to align the buy flow team. Acts as a point of contact for access requests and team follow-ups. Background: 6 years at Comcast, started on Xfinity Mobile, previously at Barclays Bank as a front-end dev.",
         interactions: [
@@ -122,7 +124,7 @@ export const initialPeople = [
         team: "Buy Flow",
         company: "Comcast",
         location: "Philadelphia, PA, USA",
-        workHours: "10:00 AM – 6:00 PM EST",
+        workHours: "EST",
         role: "Lead Develoepr",
         notes: "",
         interactions: [
@@ -170,7 +172,7 @@ export const initialPeople = [
         team: "",
         company: "Accenture",
         location: "New York, NY, USA",
-        workHours: "",
+        workHours: "EST",
         role: "",
         notes: "",
         interactions: [
@@ -215,7 +217,7 @@ export const initialPeople = [
         team: "Davinci",
         company: "Comcast",
         location: "Philadelphia, PA, USA",
-        workHours: "",
+        workHours: "EST",
         role: "Front-end Developer",
         notes: "10 years at Comcast. Started as front-end dev, moved to product dev, then back to front-end. Joined Davani group 2 years ago. Previously worked on Connected Living for 2 years. Working on Next Gen Pricing feature to lock in pricing plans for 1-5 years and simplify buy flow. Team works collaboratively across different features that impact same parts of the app.",
         interactions: [

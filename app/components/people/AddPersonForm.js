@@ -2,6 +2,7 @@ import ConnectionStrengthSelector from '../ui/ConnectionStrengthSelector';
 import FormDropdown from '../ui/FormDropdown';
 import DynamicCityPicker from '../ui/DynamicCityPicker';
 import { commonCities } from '../../lib/city-data';
+import { getTimezoneFromLocation } from '../../utils/timezone-utils';
 
 export default function AddPersonForm({
     newPerson,
@@ -21,10 +22,22 @@ export default function AddPersonForm({
                 }
             }));
         } else {
-            setNewPerson(prev => ({
-                ...prev,
-                [name]: value
-            }));
+            setNewPerson(prev => {
+                const updatedPerson = {
+                    ...prev,
+                    [name]: value
+                };
+
+                // Auto-fill work hours with timezone when location changes
+                if (name === 'location' && value) {
+                    const timezone = getTimezoneFromLocation(value);
+                    if (timezone) {
+                        updatedPerson.workHours = timezone;
+                    }
+                }
+
+                return updatedPerson;
+            });
         }
     };
 

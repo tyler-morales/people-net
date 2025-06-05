@@ -7,6 +7,7 @@ import TabNavigation from "./components/TabNavigation";
 import TableView from "./components/TableView";
 import GraphView from "./components/GraphView";
 import GlobeView from "./components/GlobeView";
+import TimezoneChart from "./components/TimezoneChart";
 import QuickNote from "./components/QuickNote";
 import Toast from "./components/Toast";
 import ApiUsageMonitor from "./components/ui/ApiUsageMonitor";
@@ -116,18 +117,20 @@ export default function Home() {
     return () => window.removeEventListener('undo-requested', handleUndoRequest);
   }, [handleUndo]);
 
-  function getTabSubtitle() {
+  const getTabSubtitle = () => {
     switch (activeTab) {
       case 'table':
-        return 'Manage your professional network in a table format.';
+        return 'Manage and track your professional connections';
       case 'graph':
-        return 'Visual network of your professional relationships.';
+        return 'Visualize your network relationships';
       case 'globe':
-        return 'Geographic visualization of your global network.';
+        return 'Explore your global connections';
+      case 'timezone':
+        return 'See when your team is available across timezones';
       default:
-        return 'Manage your professional network.';
+        return 'Your professional network hub';
     }
-  }
+  };
 
   // Show loading state until data is loaded
   if (!isLoaded) {
@@ -178,9 +181,11 @@ export default function Home() {
         />
       ) : activeTab === 'graph' ? (
         <GraphView people={people} />
-      ) : (
+      ) : activeTab === 'globe' ? (
         <GlobeView people={people} />
-      )}
+      ) : activeTab === 'timezone' ? (
+        <TimezoneChart people={people} />
+      ) : null}
 
       {/* Floating Quick Note Button */}
       <QuickNote

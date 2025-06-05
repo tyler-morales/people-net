@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     DndContext,
     closestCenter,
@@ -27,6 +27,7 @@ import { useBatchSelection } from '../../hooks/people/useBatchSelection';
 import { useTableFilters } from '../../hooks/people/useTableFilters';
 import { useColumnOrdering } from '../../hooks/people/useColumnOrdering';
 import ColumnReorderNotification from '../ui/ColumnReorderNotification';
+import { getTimezoneFromLocation } from '../../utils/timezone-utils';
 
 export default function PersonTable({
     people,
@@ -122,19 +123,33 @@ export default function PersonTable({
     const handleEditChange = (e, id) => {
         const { name, value } = e.target;
         setPeople((prev) =>
-            prev.map((p) =>
-                p.id === id
-                    ? name.startsWith("connection.")
-                        ? {
+            prev.map((p) => {
+                if (p.id === id) {
+                    let updatedPerson;
+                    if (name.startsWith("connection.")) {
+                        updatedPerson = {
                             ...p,
                             connection: {
                                 ...p.connection,
                                 [name.split(".")[1]]: value,
                             },
+                        };
+                    } else {
+                        updatedPerson = { ...p, [name]: value };
+                    }
+
+                    // Auto-fill work hours with timezone when location changes
+                    if (name === 'location' && value) {
+                        const timezone = getTimezoneFromLocation(value);
+                        if (timezone) {
+                            updatedPerson.workHours = timezone;
                         }
-                        : { ...p, [name]: value }
-                    : p
-            )
+                    }
+
+                    return updatedPerson;
+                }
+                return p;
+            })
         );
     };
 
