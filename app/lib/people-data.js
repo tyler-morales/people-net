@@ -63,9 +63,9 @@ export const initialPeople = [
             type: "coordinated",
             strength: "fleeting",
             notes: "Assisted with hardware provisioning.",
-            introducedBy: null,
+            introducedBy: "niranjan",
             introducedByName: "",
-            introducedByType: "direct"
+            introducedByType: "existing"
         }
     },
     {
@@ -111,9 +111,76 @@ export const initialPeople = [
             type: "coordinated",
             strength: "strong",
             notes: "Manages flow and syncs; handles access and team communication.",
+            introducedBy: 'niranjan',
+            introducedByName: null,
+            introducedByType: "existing"
+        }
+    },
+    {
+        id: "jenine-guy",
+        name: "Jenine Guy",
+        team: "Buy Flow",
+        company: "Comcast",
+        location: "Philly",
+        workHours: "10:00 AM – 6:00 PM EST",
+        role: "Lead Develoepr",
+        notes: "",
+        interactions: [
+            { text: "Access requests", date: "2023-01-10" },
+            { text: "Buy Flow Management", date: "2023-01-15" },
+            { text: "Team syncs", date: "2023-01-20" }
+        ],
+        dateMet: "2023-01-10",
+        connection: {
+            source: "you",
+            type: "coordinated",
+            strength: "acquaintance",
+            notes: "Manages flow and syncs; handles access and team communication.",
+            introducedBy: 'jonathon-connolly',
+            introducedByName: null,
+            introducedByType: "existing"
+        }
+    },
+    {
+        id: "ted-huff",
+        name: "Ted Huff",
+        team: "",
+        company: "Accenture",
+        location: "Chicago",
+        workHours: "CST",
+        role: "Manager",
+        notes: "People lead",
+        interactions: ["Once a week"],
+        dateMet: "4/22",
+        connection: {
+            source: "you",
+            type: "mentored",
+            strength: "strong",
+            notes: "Dev designer unicorn",
             introducedBy: null,
-            introducedByName: "HR Manager Sarah",
-            introducedByType: "external"
+            introducedByName: null,
+            introducedByType: "direct"
+        }
+    },
+    {
+        id: "josh-on",
+        name: "Josh On",
+        team: "",
+        company: "Accenture",
+        location: "",
+        workHours: "",
+        role: "",
+        notes: "",
+        interactions: [""],
+        dateMet: "",
+        connection: {
+            source: "you",
+            type: "inspired_me",
+            strength: "strong",
+            notes: "",
+            introducedBy: "",
+            introducedByName: "",
+            introducedByType: "direct"
         }
     }
 ];

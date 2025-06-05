@@ -17,6 +17,16 @@ export default function Home() {
   const [links, setLinks] = useState([]);
   const [graphFilter, setGraphFilter] = useState('all'); // New filter state
 
+  // Toast notification state
+  const [toast, setToast] = useState(null);
+
+  // Track original values for change detection
+  const [originalValues, setOriginalValues] = useState({});
+
+  // Undo functionality
+  const [undoHistory, setUndoHistory] = useState([]);
+  const [canUndo, setCanUndo] = useState(false);
+
   // Graph dimensions
   const width = 800;
   const height = 600;
@@ -35,9 +45,9 @@ export default function Home() {
       type: 'collaborated',
       strength: 'casual',
       notes: '',
-      introducedBy: null,
+      introducedBy: '',
       introducedByName: '',
-      introducedByType: 'direct'
+      introducedByType: ''
     },
     interactions: []
   });
@@ -173,6 +183,106 @@ export default function Home() {
     setSelectedNode(selectedNode?.id === node.id ? null : node);
   }
 
+  // Undo functionality
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Check for Cmd+Z (Mac) or Ctrl+Z (Windows/Linux)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undoHistory]);
+
+  // Save state before making changes
+  const saveUndoState = (action, targetId = null, fieldName = null, oldValue = null) => {
+    const undoState = {
+      timestamp: Date.now(),
+      action,
+      targetId,
+      fieldName,
+      oldValue,
+      previousPeople: JSON.parse(JSON.stringify(people)) // Deep copy
+    };
+
+    setUndoHistory(prev => {
+      const newHistory = [...prev, undoState];
+      // Keep only last 10 actions to prevent memory issues
+      return newHistory.slice(-10);
+    });
+    setCanUndo(true);
+  };
+
+  const handleUndo = () => {
+    if (undoHistory.length === 0) return;
+
+    const lastAction = undoHistory[undoHistory.length - 1];
+    setPeople(lastAction.previousPeople);
+
+    // Remove the last action from history
+    setUndoHistory(prev => prev.slice(0, -1));
+    setCanUndo(undoHistory.length > 1);
+
+    // Show undo toast
+    let undoMessage = 'Undid last action';
+    if (lastAction.action === 'update' && lastAction.targetId) {
+      const person = lastAction.previousPeople.find(p => p.id === lastAction.targetId);
+      undoMessage = `Undid update to ${person?.name || 'person'}`;
+    } else if (lastAction.action === 'delete' && lastAction.targetId) {
+      undoMessage = `Restored ${lastAction.oldValue}`;
+    } else if (lastAction.action === 'add' && lastAction.oldValue) {
+      undoMessage = `Removed ${lastAction.oldValue}`;
+    }
+
+    showToast(undoMessage, 'info');
+  };
+
+  // Toast helper function
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000); // Auto-hide after 3 seconds
+  };
+
+  // Track original value when field gains focus
+  const handleFieldFocus = (personId, fieldName, currentValue) => {
+    const key = `${personId}-${fieldName}`;
+
+    // Only save if we haven't already saved for this field
+    if (!(key in originalValues)) {
+      setOriginalValues(prev => ({
+        ...prev,
+        [key]: currentValue
+      }));
+
+      // Save undo state when editing begins (before any changes)
+      saveUndoState('update', personId, fieldName, currentValue);
+    }
+  };
+
+  // Helper to get nested property value
+  const getFieldValue = (person, fieldName) => {
+    if (fieldName.startsWith('connection.')) {
+      const connectionField = fieldName.split('.')[1];
+      return person.connection?.[connectionField] || '';
+    }
+    if (fieldName.startsWith('interactions.')) {
+      const parts = fieldName.split('.');
+      const index = parseInt(parts[1]);
+      const subField = parts[2];
+      const interaction = person.interactions[index];
+      if (subField === 'text') {
+        return typeof interaction === 'string' ? interaction : (interaction?.text || '');
+      }
+      if (subField === 'date') {
+        return typeof interaction === 'string' ? '' : (interaction?.date || '');
+      }
+    }
+    return person[fieldName] || '';
+  };
+
   const handleEditChange = (e, id) => {
     const { name, value } = e.target;
     setPeople((prev) =>
@@ -190,6 +300,34 @@ export default function Home() {
           : p
       )
     );
+  };
+
+  const handleEditBlur = (e, id, fieldName) => {
+    const person = people.find(p => p.id === id);
+    const key = `${id}-${fieldName}`;
+    const originalValue = originalValues[key];
+    const currentValue = getFieldValue(person, fieldName);
+
+    // Only show toast if value actually changed
+    if (person && originalValue !== undefined && originalValue !== currentValue) {
+      // Clean up field name for display
+      const displayFieldName = fieldName
+        .replace('connection.', '')
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, str => str.toUpperCase())
+        .replace('Introduced By Type', 'connection method')
+        .replace('Introduced By Name', 'external introducer')
+        .replace('Introduced By', 'introducer');
+
+      showToast(`Updated ${displayFieldName} for ${person.name}`, 'success');
+    }
+
+    // Clean up the stored original value
+    setOriginalValues(prev => {
+      const newValues = { ...prev };
+      delete newValues[key];
+      return newValues;
+    });
   };
 
   const handleNewPersonChange = (e) => {
@@ -222,7 +360,13 @@ export default function Home() {
       ]
     };
 
+    // Save undo state before adding
+    saveUndoState('add', personToAdd.id, null, newPerson.name);
+
     setPeople(prev => [...prev, personToAdd]);
+
+    // Show success toast
+    showToast(`Added ${newPerson.name} to your network!`, 'success');
 
     // Reset form
     setNewPerson({
@@ -249,11 +393,19 @@ export default function Home() {
   };
 
   const handleInlineEdit = (personId, field) => {
+    const person = people.find(p => p.id === personId);
+    const currentValue = getFieldValue(person, field);
+
+    // Save undo state and track original value when starting to edit
+    handleFieldFocus(personId, field, currentValue);
     setEditingField(`${personId}-${field}`);
   };
 
-  const handleInlineBlur = () => {
+  const handleInlineBlur = (e, id, fieldName) => {
     setEditingField(null);
+    if (e && id && fieldName) {
+      handleEditBlur(e, id, fieldName);
+    }
   };
 
   const handleInteractionAdd = (id) => {
@@ -292,6 +444,16 @@ export default function Home() {
   };
 
   const handleDateEditStart = (id, index) => {
+    // Track original date value and save undo state
+    const person = people.find(p => p.id === id);
+    const interaction = person.interactions[index];
+    const originalDate = typeof interaction === 'string' ? '' : (interaction.date || '');
+    const fieldName = `interactions.${index}.date`;
+
+    // Save undo state before making any changes
+    saveUndoState('update', id, fieldName, originalDate);
+    handleFieldFocus(id, fieldName, originalDate);
+
     // Convert string interaction to object when starting to edit date
     setPeople((prev) =>
       prev.map((p) =>
@@ -326,6 +488,23 @@ export default function Home() {
       )
     );
     setEditingDateId(null); // Close the date picker after selection
+
+    // Check if date actually changed and show toast
+    const key = `${id}-interactions.${index}.date`;
+    const originalValue = originalValues[key];
+    if (originalValue !== undefined && originalValue !== newDate) {
+      const person = people.find(p => p.id === id);
+      if (person) {
+        showToast(`Updated interaction date for ${person.name}`, 'success');
+      }
+    }
+
+    // Clean up stored original value
+    setOriginalValues(prev => {
+      const newValues = { ...prev };
+      delete newValues[key];
+      return newValues;
+    });
   };
 
   const handleInteractionRemove = (id, index) => {
@@ -339,6 +518,15 @@ export default function Home() {
           : p
       )
     );
+  };
+
+  // Handle person deletion with undo support
+  const handleDeletePerson = (personToDelete) => {
+    // Save undo state before deletion
+    saveUndoState('delete', personToDelete.id, null, personToDelete.name);
+
+    setPeople(people.filter((p) => p.id !== personToDelete.id));
+    showToast(`Deleted ${personToDelete.name} from your network`, 'error');
   };
 
   // Tab content renderers
@@ -637,7 +825,6 @@ export default function Home() {
             <th className="text-left p-2 border-b">Name</th>
             <th className="text-left p-2 border-b">Company</th>
             <th className="text-left p-2 border-b">Role</th>
-            <th className="text-left p-2 border-b">Connected Through</th>
             <th className="text-left p-2 border-b">
               Connection Strength
               <button
@@ -662,8 +849,9 @@ export default function Home() {
                     <input
                       name="name"
                       value={person.name}
+                      onFocus={(e) => handleFieldFocus(person.id, 'name', e.target.value)}
                       onChange={(e) => handleEditChange(e, person.id)}
-                      onBlur={handleInlineBlur}
+                      onBlur={(e) => handleInlineBlur(e, person.id, 'name')}
                       className="border p-1 w-full rounded"
                       autoFocus
                     />
@@ -671,7 +859,7 @@ export default function Home() {
                     <div
                       className="border border-transparent p-1 rounded cursor-text hover:bg-gray-100"
                       onClick={() => handleInlineEdit(person.id, 'name')}
-                      onFocus={() => handleInlineEdit(person.id, 'name')}
+                      onFocus={(e) => handleInlineEdit(person.id, 'name')}
                       tabIndex="0"
                       title="Edit name"
                     >
@@ -684,8 +872,9 @@ export default function Home() {
                     <input
                       name="company"
                       value={person.company}
+                      onFocus={(e) => handleFieldFocus(person.id, 'company', e.target.value)}
                       onChange={(e) => handleEditChange(e, person.id)}
-                      onBlur={handleInlineBlur}
+                      onBlur={(e) => handleInlineBlur(e, person.id, 'company')}
                       className="border p-1 w-full rounded"
                       autoFocus
                     />
@@ -693,7 +882,7 @@ export default function Home() {
                     <div
                       className="border border-transparent p-1 rounded cursor-text hover:bg-gray-100"
                       onClick={() => handleInlineEdit(person.id, 'company')}
-                      onFocus={() => handleInlineEdit(person.id, 'company')}
+                      onFocus={(e) => handleInlineEdit(person.id, 'company')}
                       tabIndex="0"
                       title="Edit company"
                     >
@@ -706,8 +895,9 @@ export default function Home() {
                     <input
                       name="role"
                       value={person.role}
+                      onFocus={(e) => handleFieldFocus(person.id, 'role', e.target.value)}
                       onChange={(e) => handleEditChange(e, person.id)}
-                      onBlur={handleInlineBlur}
+                      onBlur={(e) => handleInlineBlur(e, person.id, 'role')}
                       className="border p-1 w-full rounded"
                       autoFocus
                     />
@@ -715,7 +905,7 @@ export default function Home() {
                     <div
                       className="border border-transparent p-1 rounded cursor-text hover:bg-blue-50"
                       onClick={() => handleInlineEdit(person.id, 'role')}
-                      onFocus={() => handleInlineEdit(person.id, 'role')}
+                      onFocus={(e) => handleInlineEdit(person.id, 'role')}
                       tabIndex="0"
                       title="Edit role"
                     >
@@ -723,23 +913,17 @@ export default function Home() {
                     </div>
                   )}
                 </td>
-                <td className="p-2 border-b text-sm">
-                  {person.connection?.introducedByType === 'direct' ? (
-                    <span className="text-green-600">Direct</span>
-                  ) : person.connection?.introducedByType === 'existing' ? (
-                    <span className="text-blue-600">
-                      {people.find(p => p.id === person.connection.introducedBy)?.name || 'Unknown'}
-                    </span>
-                  ) : person.connection?.introducedByType === 'external' ? (
-                    <span className="text-purple-600">
-                      {person.connection.introducedByName || 'External'}
-                    </span>
-                  ) : (
-                    <span className="text-gray-400">Unknown</span>
-                  )}
-                </td>
                 <td className="p-2 border-b">
-                  <select name="connection.strength" value={person.connection?.strength} onChange={(e) => handleEditChange(e, person.id)} className="border p-1 w-full rounded bg-white">
+                  <select
+                    name="connection.strength"
+                    value={person.connection?.strength}
+                    onFocus={(e) => handleFieldFocus(person.id, 'connection.strength', e.target.value)}
+                    onChange={(e) => {
+                      handleEditChange(e, person.id);
+                      showToast(`Updated connection strength for ${person.name}`, 'success');
+                    }}
+                    className="border p-1 w-full rounded bg-white"
+                  >
                     <option value="fleeting">Fleeting (1)</option>
                     <option value="acquaintance">Acquaintance (2)</option>
                     <option value="casual">Casual (3)</option>
@@ -752,7 +936,7 @@ export default function Home() {
                   <button className="text-purple-500" onClick={() => setSelectedPersonId(selectedPersonId === person.id ? null : person.id)}>
                     {selectedPersonId === person.id ? 'Close' : 'View'}
                   </button>
-                  <button className="text-red-600 ml-2" onClick={() => setPeople(people.filter((p) => p.id !== person.id))}>
+                  <button className="text-red-600 ml-2" onClick={() => handleDeletePerson(person)}>
                     Delete
                   </button>
                 </td>
@@ -760,67 +944,249 @@ export default function Home() {
               {selectedPersonId === person.id && (
                 <tr className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                   <td colSpan={5} className="p-4">
-                    <div className="mb-2">
-                      <strong>Connection</strong>
-                      <div className="mt-1">
-                        <label className="block text-sm">Type:</label>
-                        <select name="connection.type" value={person.connection?.type} onChange={(e) => handleEditChange(e, person.id)} className="border p-1">
-                          <option value="collaborated">Collaborated</option>
-                          <option value="mentored">Mentored</option>
-                          <option value="coordinated">Coordinated</option>
-                          <option value="reviewed_code">Reviewed Code</option>
-                          <option value="led_meeting">Led Meeting</option>
-                          <option value="inspired_me">Inspired Me</option>
-                        </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Left Column - Basic Information */}
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-lg mb-3">Basic Information</h4>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Team</label>
+                          <input
+                            name="team"
+                            value={person.team || ''}
+                            onFocus={(e) => handleFieldFocus(person.id, 'team', e.target.value)}
+                            onChange={(e) => handleEditChange(e, person.id)}
+                            onBlur={(e) => handleInlineBlur(e, person.id, 'team')}
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                            placeholder="Enter team"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                          <input
+                            name="location"
+                            value={person.location || ''}
+                            onFocus={(e) => handleFieldFocus(person.id, 'location', e.target.value)}
+                            onChange={(e) => handleEditChange(e, person.id)}
+                            onBlur={(e) => handleInlineBlur(e, person.id, 'location')}
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                            placeholder="Enter location"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Work Hours</label>
+                          <input
+                            name="workHours"
+                            value={person.workHours || ''}
+                            onFocus={(e) => handleFieldFocus(person.id, 'workHours', e.target.value)}
+                            onChange={(e) => handleEditChange(e, person.id)}
+                            onBlur={(e) => handleInlineBlur(e, person.id, 'workHours')}
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                            placeholder="e.g., 9am-5pm EST"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Date Met</label>
+                          <input
+                            type="date"
+                            name="dateMet"
+                            value={person.dateMet || ''}
+                            onFocus={(e) => handleFieldFocus(person.id, 'dateMet', e.target.value)}
+                            onChange={(e) => handleEditChange(e, person.id)}
+                            onBlur={(e) => handleInlineBlur(e, person.id, 'dateMet')}
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                          <textarea
+                            name="notes"
+                            value={person.notes || ''}
+                            onFocus={(e) => handleFieldFocus(person.id, 'notes', e.target.value)}
+                            onChange={(e) => handleEditChange(e, person.id)}
+                            onBlur={(e) => handleInlineBlur(e, person.id, 'notes')}
+                            rows="3"
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                            placeholder="Additional notes..."
+                          />
+                        </div>
                       </div>
-                      <div className="mt-1">
-                        <label className="block text-sm">Notes:</label>
-                        <textarea name="connection.notes" value={person.connection?.notes} onChange={(e) => handleEditChange(e, person.id)} className="border p-1 w-full" />
+
+                      {/* Right Column - Connection Information */}
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-lg mb-3">Connection Details</h4>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Connection Type</label>
+                          <select
+                            name="connection.type"
+                            value={person.connection?.type || 'collaborated'}
+                            onFocus={(e) => handleFieldFocus(person.id, 'connection.type', e.target.value)}
+                            onChange={(e) => handleEditChange(e, person.id)}
+                            onBlur={(e) => handleInlineBlur(e, person.id, 'connection.type')}
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                          >
+                            <option value="collaborated">Collaborated</option>
+                            <option value="mentored">Mentored</option>
+                            <option value="coordinated">Coordinated</option>
+                            <option value="reviewed_code">Reviewed Code</option>
+                            <option value="led_meeting">Led Meeting</option>
+                            <option value="inspired_me">Inspired Me</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">How do you know them?</label>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name="connection.introducedByType"
+                                  value="direct"
+                                  checked={person.connection?.introducedByType === 'direct'}
+                                  onFocus={() => handleFieldFocus(person.id, 'connection.introducedByType', person.connection?.introducedByType || 'direct')}
+                                  onChange={(e) => handleEditChange(e, person.id)}
+                                  onBlur={(e) => handleInlineBlur(e, person.id, 'connection.introducedByType')}
+                                  className="mr-2"
+                                />
+                                I know them directly
+                              </label>
+                            </div>
+
+                            <div>
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name="connection.introducedByType"
+                                  value="existing"
+                                  checked={person.connection?.introducedByType === 'existing'}
+                                  onFocus={() => handleFieldFocus(person.id, 'connection.introducedByType', person.connection?.introducedByType || 'direct')}
+                                  onChange={(e) => handleEditChange(e, person.id)}
+                                  onBlur={(e) => handleInlineBlur(e, person.id, 'connection.introducedByType')}
+                                  className="mr-2"
+                                />
+                                Through someone in my network
+                              </label>
+                              {person.connection?.introducedByType === 'existing' && (
+                                <select
+                                  name="connection.introducedBy"
+                                  value={person.connection?.introducedBy || ''}
+                                  onFocus={(e) => handleFieldFocus(person.id, 'connection.introducedBy', e.target.value)}
+                                  onChange={(e) => handleEditChange(e, person.id)}
+                                  onBlur={(e) => handleInlineBlur(e, person.id, 'connection.introducedBy')}
+                                  className="mt-1 w-full border border-gray-300 rounded px-3 py-2"
+                                >
+                                  <option value="">Select person...</option>
+                                  {people.filter(p => p.id !== person.id).map(p => (
+                                    <option key={p.id} value={p.id}>
+                                      {p.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </div>
+
+                            <div>
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name="connection.introducedByType"
+                                  value="external"
+                                  checked={person.connection?.introducedByType === 'external'}
+                                  onFocus={() => handleFieldFocus(person.id, 'connection.introducedByType', person.connection?.introducedByType || 'direct')}
+                                  onChange={(e) => handleEditChange(e, person.id)}
+                                  onBlur={(e) => handleInlineBlur(e, person.id, 'connection.introducedByType')}
+                                  className="mr-2"
+                                />
+                                Through someone else
+                              </label>
+                              {person.connection?.introducedByType === 'external' && (
+                                <input
+                                  type="text"
+                                  name="connection.introducedByName"
+                                  value={person.connection?.introducedByName || ''}
+                                  onFocus={(e) => handleFieldFocus(person.id, 'connection.introducedByName', e.target.value)}
+                                  onChange={(e) => handleEditChange(e, person.id)}
+                                  onBlur={(e) => handleInlineBlur(e, person.id, 'connection.introducedByName')}
+                                  placeholder="Enter their name..."
+                                  className="mt-1 w-full border border-gray-300 rounded px-3 py-2"
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Connection Notes</label>
+                          <textarea
+                            name="connection.notes"
+                            value={person.connection?.notes || ''}
+                            onFocus={(e) => handleFieldFocus(person.id, 'connection.notes', e.target.value)}
+                            onChange={(e) => handleEditChange(e, person.id)}
+                            onBlur={(e) => handleInlineBlur(e, person.id, 'connection.notes')}
+                            rows="3"
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                            placeholder="Describe how you connected..."
+                          />
+                        </div>
                       </div>
                     </div>
-                    <div className="mb-2">
-                      <strong>Interactions</strong>
-                      <ul className="list-disc ml-4">
+
+                    {/* Interactions Section */}
+                    <div className="mt-6">
+                      <h4 className="font-semibold text-lg mb-3">Interactions</h4>
+                      <ul className="space-y-2">
                         {person.interactions.map((interaction, i) => (
-                          <li key={i} className="mb-2">
-                            <div className="flex items-center justify-between">
+                          <li key={i} className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
+                            <input
+                              type="text"
+                              value={typeof interaction === 'string' ? interaction : interaction.text}
+                              onFocus={(e) => handleFieldFocus(person.id, `interactions.${i}.text`, e.target.value)}
+                              onChange={(e) => handleInteractionChange(person.id, i, e.target.value)}
+                              onBlur={(e) => handleInlineBlur(e, person.id, `interactions.${i}.text`)}
+                              className="flex-1 border border-gray-300 rounded px-3 py-2"
+                              placeholder="Enter interaction"
+                            />
+                            {editingDateId === `${person.id}-${i}` ? (
                               <input
-                                type="text"
-                                value={typeof interaction === 'string' ? interaction : interaction.text}
-                                onChange={(e) => handleInteractionChange(person.id, i, e.target.value)}
-                                className="p-1 flex-1 mr-2 bg-gray-200 rounded"
-                                placeholder="Enter interaction"
+                                type="date"
+                                value={typeof interaction === 'string' ? new Date().toISOString().split('T')[0] : (interaction.date || new Date().toISOString().split('T')[0])}
+                                onFocus={(e) => handleFieldFocus(person.id, `interactions.${i}.date`, e.target.value)}
+                                onChange={(e) => handleInteractionDateChange(person.id, i, e.target.value)}
+                                onBlur={() => setEditingDateId(null)}
+                                className="border border-gray-300 rounded px-3 py-2"
+                                autoFocus
                               />
-                              {editingDateId === `${person.id}-${i}` ? (
-                                <input
-                                  type="date"
-                                  value={typeof interaction === 'string' ? new Date().toISOString().split('T')[0] : (interaction.date || new Date().toISOString().split('T')[0])}
-                                  onChange={(e) => handleInteractionDateChange(person.id, i, e.target.value)}
-                                  onBlur={() => setEditingDateId(null)}
-                                  className="text-sm border rounded px-2 py-1"
-                                  autoFocus
-                                />
-                              ) : (
-                                <span
-                                  className="text-sm text-gray-500 min-w-max cursor-pointer hover:text-blue-600 hover:underline"
-                                  onClick={() => handleDateEditStart(person.id, i)}
-                                  title="Click to edit date"
-                                >
-                                  {typeof interaction === 'string' ? 'No date' : interaction.date}
-                                </span>
-                              )}
+                            ) : (
                               <button
-                                onClick={() => handleInteractionRemove(person.id, i)}
-                                className="text-red-600 hover:text-red-800 ml-2 px-2"
-                                title="Remove interaction"
+                                className="text-sm text-gray-600 hover:text-blue-600 hover:underline min-w-max"
+                                onClick={() => handleDateEditStart(person.id, i)}
+                                title="Click to edit date"
                               >
-                                ×
+                                {typeof interaction === 'string' ? 'Add date' : (interaction.date || 'Add date')}
                               </button>
-                            </div>
+                            )}
+                            <button
+                              onClick={() => handleInteractionRemove(person.id, i)}
+                              className="text-red-600 hover:text-red-800 px-2 py-1 rounded"
+                              title="Remove interaction"
+                            >
+                              ×
+                            </button>
                           </li>
                         ))}
                       </ul>
-                      <button onClick={() => handleInteractionAdd(person.id)} className="mt-2 text-sm text-blue-600">+ Add New Interaction</button>
+                      <button
+                        onClick={() => handleInteractionAdd(person.id)}
+                        className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        + Add New Interaction
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -1027,6 +1393,51 @@ export default function Home() {
     </div>
   );
 
+  // Toast Component
+  const Toast = () => {
+    if (!toast) return null;
+
+    return (
+      <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
+        <div className={`px-4 py-3 rounded-lg shadow-lg border max-w-sm ${toast.type === 'success'
+          ? 'bg-green-50 border-green-200 text-green-800'
+          : toast.type === 'error'
+            ? 'bg-red-50 border-red-200 text-red-800'
+            : toast.type === 'info'
+              ? 'bg-blue-50 border-blue-200 text-blue-800'
+              : 'bg-gray-50 border-gray-200 text-gray-800'
+          }`}>
+          <div className="flex items-center gap-2">
+            {toast.type === 'success' && (
+              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            )}
+            {toast.type === 'error' && (
+              <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            )}
+            {toast.type === 'info' && (
+              <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span className="text-sm font-medium">{toast.message}</span>
+            <button
+              onClick={() => setToast(null)}
+              className="ml-2 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <main className="">
       {/* Tab Navigation */}
@@ -1049,6 +1460,16 @@ export default function Home() {
         >
           🕸️ Graph
         </button>
+
+        {/* Undo indicator */}
+        {canUndo && (
+          <div className="ml-auto flex items-center text-sm text-gray-500">
+            <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg">
+              {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Z
+            </kbd>
+            <span className="ml-2">to undo</span>
+          </div>
+        )}
       </div>
 
       <header className="my-4">
@@ -1065,6 +1486,9 @@ export default function Home() {
 
       {/* Render content based on active tab */}
       {activeTab === 'table' ? renderTableView() : renderGraphView()}
+
+      {/* Toast Notification */}
+      <Toast />
     </main>
   );
 }
