@@ -62,6 +62,8 @@ export default function GlobeView({ people }) {
     const [selectedCity, setSelectedCity] = useState(null);
     const [globeReady, setGlobeReady] = useState(false);
     const [isRotating, setIsRotating] = useState(true);
+    const [selectedLocation, setSelectedLocation] = useState(null);
+    const [selectedContactRange, setSelectedContactRange] = useState(null);
 
     // Group people by location and create globe data
     const globeData = (() => {
@@ -76,7 +78,7 @@ export default function GlobeView({ people }) {
         }, {});
 
         // Convert to globe points with proportional heights
-        return Object.entries(locationGroups).map(([location, peopleInLocation]) => {
+        const allData = Object.entries(locationGroups).map(([location, peopleInLocation]) => {
             const coords = parseLocation(location);
             const count = peopleInLocation.length;
 
@@ -91,6 +93,24 @@ export default function GlobeView({ people }) {
                 height: getCityHeight(count)
             };
         });
+
+        // Filter by selected location if any
+        if (selectedLocation) {
+            return allData.filter(item => item.location === selectedLocation);
+        }
+
+        // Filter by selected contact range if any
+        if (selectedContactRange) {
+            return allData.filter(item => {
+                const count = item.count;
+                if (selectedContactRange.minCount === 5) return count >= 5;
+                if (selectedContactRange.minCount === 3) return count >= 3 && count <= 4;
+                if (selectedContactRange.minCount === 2) return count === 2;
+                return count === 1;
+            });
+        }
+
+        return allData;
     })();
 
     // Color mapping based on number of people
@@ -141,12 +161,57 @@ export default function GlobeView({ people }) {
         }
     }, [isRotating]);
 
+    const handleLocationClick = (location) => {
+        if (selectedLocation === location) {
+            setSelectedLocation(null); // Deselect if already selected
+            // Reset globe view to show all
+            if (globeEl.current) {
+                globeEl.current.pointOfView({ altitude: 2 }, 1000);
+            }
+        } else {
+            setSelectedLocation(location);
+            // Animate globe to focus on this location
+            const coords = parseLocation(location);
+            if (globeEl.current && coords.lat !== 0 && coords.lng !== 0) {
+                globeEl.current.pointOfView({
+                    lat: coords.lat,
+                    lng: coords.lng,
+                    altitude: 1.5 // Zoom in closer to the location
+                }, 1500); // 1.5 second animation
+            }
+        }
+        setSelectedCity(null); // Clear city selection
+        setSelectedContactRange(null); // Clear range selection
+    };
+
+    const handleContactRangeClick = (range) => {
+        if (selectedContactRange && selectedContactRange.minCount === range.minCount) {
+            setSelectedContactRange(null); // Deselect if already selected
+        } else {
+            setSelectedContactRange(range);
+        }
+        setSelectedLocation(null); // Clear location selection
+        setSelectedCity(null); // Clear city selection
+    };
+
     return (
         <div className="flex gap-6">
             {/* Globe Container - 70% width */}
             <div className="w-[70%]">
                 <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Global Network View</h3>
+                    <div className="flex items-center gap-4">
+                        <h3 className="text-lg font-semibold">Global Network View</h3>
+                        {selectedLocation && (
+                            <div className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                                Filtered: {selectedLocation}
+                            </div>
+                        )}
+                        {selectedContactRange && (
+                            <div className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                                Showing: {selectedContactRange.range}
+                            </div>
+                        )}
+                    </div>
                     <div className="flex items-center gap-4">
                         <button
                             onClick={toggleRotation}
@@ -158,7 +223,10 @@ export default function GlobeView({ people }) {
                             {isRotating ? '⏸️ Stop' : '▶️ Rotate'}
                         </button>
                         <div className="text-sm text-gray-600">
-                            {people.length} contacts • {globeData.filter(p => p.lat !== 0 || p.lng !== 0).length} locations
+                            {selectedLocation || selectedContactRange
+                                ? `Showing ${globeData.length} location${globeData.length === 1 ? '' : 's'}`
+                                : `${people.length} contacts • ${globeData.filter(p => p.lat !== 0 || p.lng !== 0).length} locations`
+                            }
                         </div>
                     </div>
                 </div>
@@ -244,17 +312,27 @@ export default function GlobeView({ people }) {
                                     const maxHeight = 120;
                                     const minHeight = 20;
                                     const barHeight = minHeight + ((count / maxCount) * (maxHeight - minHeight));
+                                    const isSelected = selectedLocation === location;
+                                    const isOtherSelected = selectedLocation && selectedLocation !== location;
 
                                     return (
-                                        <div key={location} className="flex flex-col items-center w-16">
+                                        <div
+                                            key={location}
+                                            className="flex flex-col items-center w-16 cursor-pointer group"
+                                            onClick={() => handleLocationClick(location)}
+                                        >
                                             {/* Count label */}
-                                            <div className="text-xs font-semibold text-gray-700 mb-1">
+                                            <div className={`text-xs font-semibold mb-1 transition-colors ${isSelected ? 'text-blue-700' :
+                                                isOtherSelected ? 'text-gray-400' : 'text-gray-700'
+                                                }`}>
                                                 {count}
                                             </div>
 
                                             {/* Bar */}
                                             <div
-                                                className="bg-blue-500 w-full rounded-t-md transition-all duration-700 ease-out"
+                                                className={`w-full rounded-t-md transition-all duration-300 ease-out group-hover:opacity-80 ${isSelected ? 'bg-blue-700 shadow-lg' :
+                                                    isOtherSelected ? 'bg-blue-300' : 'bg-blue-500'
+                                                    }`}
                                                 style={{
                                                     height: `${barHeight}px`,
                                                     minHeight: '20px'
@@ -262,7 +340,9 @@ export default function GlobeView({ people }) {
                                             ></div>
 
                                             {/* Location label */}
-                                            <div className="text-xs text-gray-600 mt-2 text-center leading-tight w-full">
+                                            <div className={`text-xs mt-2 text-center leading-tight w-full transition-colors ${isSelected ? 'text-blue-700 font-semibold' :
+                                                isOtherSelected ? 'text-gray-400' : 'text-gray-600'
+                                                }`}>
                                                 <div className="truncate">
                                                     {location.length > 10 ? location.substring(0, 10) + '...' : location}
                                                 </div>
@@ -306,26 +386,93 @@ export default function GlobeView({ people }) {
                     </div>
                 )}
 
-                {/* City Size Legend */}
+                {/* Location Legend */}
                 <div className="bg-white p-4 rounded-lg border border-gray-300">
                     <h3 className="font-semibold mb-3">Location Legend</h3>
                     <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#ff6b6b' }}></div>
-                            <span>5+ contacts</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#feca57' }}></div>
-                            <span>3-4 contacts</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#45b7d1' }}></div>
-                            <span>2 contacts</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#4ecdc4' }}></div>
-                            <span>1 contact</span>
-                        </div>
+                        {[
+                            { range: '5+ contacts', color: '#ff6b6b', minCount: 5 },
+                            { range: '3-4 contacts', color: '#feca57', minCount: 3 },
+                            { range: '2 contacts', color: '#45b7d1', minCount: 2 },
+                            { range: '1 contact', color: '#4ecdc4', minCount: 1 }
+                        ].map((item) => {
+                            // Find locations that match this color range
+                            const matchingLocations = Object.entries(
+                                people.reduce((acc, person) => {
+                                    const location = person.location || 'Unknown';
+                                    acc[location] = (acc[location] || 0) + 1;
+                                    return acc;
+                                }, {})
+                            ).filter(([, count]) => {
+                                if (item.minCount === 5) return count >= 5;
+                                if (item.minCount === 3) return count >= 3 && count <= 4;
+                                if (item.minCount === 2) return count === 2;
+                                return count === 1;
+                            });
+
+                            return (
+                                <div key={item.range} className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <div
+                                            className="w-4 h-4 rounded-full cursor-pointer hover:scale-110 transition-transform"
+                                            style={{ backgroundColor: item.color }}
+                                            onClick={() => handleContactRangeClick(item)}
+                                        ></div>
+                                        <span>{item.range}</span>
+                                        <span className="text-gray-500 ml-auto">
+                                            {matchingLocations.length} cities
+                                        </span>
+                                    </div>
+
+                                    {/* Show matching locations when this color is selected */}
+                                    {selectedContactRange && selectedContactRange.minCount === item.minCount && (
+                                        <div className="ml-6 text-xs space-y-2">
+                                            <div className="text-blue-600 font-medium">
+                                                Cities in this range:
+                                            </div>
+                                            {matchingLocations.map(([location, count]) => {
+                                                // Get contacts for this location
+                                                const contactsInLocation = people.filter(person =>
+                                                    (person.location || 'Unknown') === location
+                                                );
+
+                                                return (
+                                                    <div key={location} className="space-y-1">
+                                                        <div className="text-blue-700 font-medium">
+                                                            📍 {location} ({count} contact{count === 1 ? '' : 's'})
+                                                        </div>
+                                                        <div className="ml-4 space-y-1">
+                                                            {contactsInLocation.map((person, idx) => (
+                                                                <div key={idx} className="text-gray-600 text-xs">
+                                                                    • {person.name} - {person.role} at {person.company}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+
+                        {/* Clear filter button */}
+                        {(selectedContactRange || selectedLocation) && (
+                            <div className="pt-2 border-t border-gray-200">
+                                <button
+                                    onClick={() => {
+                                        setSelectedContactRange(null);
+                                        setSelectedLocation(null);
+                                        setSelectedCity(null);
+                                    }}
+                                    className="text-xs text-blue-600 hover:text-blue-800 underline"
+                                >
+                                    Clear filter • Show all locations
+                                </button>
+                            </div>
+                        )}
+
                         <div className="text-xs text-gray-500 mt-2">
                             • Cylinder height = number of contacts
                         </div>
