@@ -4,7 +4,7 @@ export const initialPeople = [
         name: "Niranjan",
         team: "",
         company: "Accenture",
-        location: "Philly",
+        location: "Philadelphia, PA, USA",
         workHours: "9:30 PM – 6:30 AM",
         role: "Hiring Manager / Client Account",
         notes: "Very knowledgeable of codebase",
@@ -27,7 +27,7 @@ export const initialPeople = [
         name: "Saswat Das",
         team: "",
         company: "Accenture",
-        location: "",
+        location: "Bangalore, India",
         workHours: "9:30 PM – 6:30 AM",
         role: "Developer",
         notes: "Very knowledgeable of codebase",
@@ -50,7 +50,7 @@ export const initialPeople = [
         name: "Tom Limongello",
         team: "",
         company: "Comcast",
-        location: "",
+        location: "Denver, CO, USA",
         workHours: "",
         role: "Eng 1, Eng Ops, Tech & Product, Global Tech Org",
         notes: "Handles laptop deployments",
@@ -96,7 +96,7 @@ export const initialPeople = [
         name: "Jonathon Connolly",
         team: "Buy Flow",
         company: "Comcast",
-        location: "Philly",
+        location: "Philadelphia, PA, USA",
         workHours: "10:00 AM – 6:00 PM EST",
         role: "Manager, Buy Flow Department",
         notes: "Manages the purchase flow with 5 package types (User, Agent for internal Comcast employees). Leads 4 dev teams (~10 devs each) with 11 direct Xfinity reports. Hosts biweekly team syncs to align the buy flow team. Acts as a point of contact for access requests and team follow-ups. Background: 6 years at Comcast, started on Xfinity Mobile, previously at Barclays Bank as a front-end dev.",
@@ -121,7 +121,7 @@ export const initialPeople = [
         name: "Jenine Guy",
         team: "Buy Flow",
         company: "Comcast",
-        location: "Philly",
+        location: "Philadelphia, PA, USA",
         workHours: "10:00 AM – 6:00 PM EST",
         role: "Lead Develoepr",
         notes: "",
@@ -146,7 +146,7 @@ export const initialPeople = [
         name: "Ted Huff",
         team: "",
         company: "Accenture",
-        location: "Chicago",
+        location: "Chicago, IL, USA",
         workHours: "CST",
         role: "Manager",
         notes: "People lead",
@@ -169,9 +169,9 @@ export const initialPeople = [
         name: "Josh On",
         team: "",
         company: "Accenture",
-        location: "San Francisco",
-        workHours: "PST",
-        role: "Designer/ Developer",
+        location: "New York, NY, USA",
+        workHours: "",
+        role: "",
         notes: "",
         interactions: [
             { text: "", date: "" }
@@ -182,7 +182,6 @@ export const initialPeople = [
             type: "inspired_me",
             strength: "core",
             notes: "",
-            introducedBy: "",
             introducedByName: "",
             introducedByType: "direct"
         }
@@ -192,7 +191,7 @@ export const initialPeople = [
         name: "Chris Vo",
         team: "Groot",
         company: "Comcast",
-        location: "Philadelphia",
+        location: "Philadelphia, PA, USA",
         workHours: "EST",
         role: "Software Developer II",
         notes: "Front-end developer. Previously on Team DaVinci for 2 weeks. From Vietnam (15 years ago). Bootcamp grad. Works in office 3-4 days/week. With Comcast for 4 years.",
@@ -215,7 +214,7 @@ export const initialPeople = [
         name: "Denine Guy",
         team: "Davinci",
         company: "Comcast",
-        location: "",
+        location: "Philadelphia, PA, USA",
         workHours: "",
         role: "Front-end Developer",
         notes: "10 years at Comcast. Started as front-end dev, moved to product dev, then back to front-end. Joined Davani group 2 years ago. Previously worked on Connected Living for 2 years. Working on Next Gen Pricing feature to lock in pricing plans for 1-5 years and simplify buy flow. Team works collaboratively across different features that impact same parts of the app.",
@@ -228,10 +227,9 @@ export const initialPeople = [
             type: "",
             strength: "",
             notes: "",
-            introducedBy: 'jonathon-connolly',
+            introducedBy: null,
             introducedByName: null,
-            introducedByType: "existing"
+            introducedByType: "direct"
         }
-    },
-
+    }
 ];

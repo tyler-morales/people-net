@@ -1,5 +1,6 @@
 import ConnectionStrengthSelector from '../ui/ConnectionStrengthSelector';
 import FormDropdown from '../ui/FormDropdown';
+import { commonCities } from '../../lib/city-data';
 
 export default function AddPersonForm({
     newPerson,
@@ -30,6 +31,13 @@ export default function AddPersonForm({
     const getUniqueValues = (field) => {
         const values = people.map(person => person[field]).filter(Boolean);
         return [...new Set(values)].sort();
+    };
+
+    // Enhanced location options - combine existing data with common cities
+    const getLocationOptions = () => {
+        const existingLocations = getUniqueValues('location');
+        const allLocations = [...new Set([...existingLocations, ...commonCities])];
+        return allLocations.sort();
     };
 
     return (
@@ -112,7 +120,7 @@ export default function AddPersonForm({
                             name="location"
                             value={newPerson.location}
                             onChange={handleChange}
-                            options={getUniqueValues('location')}
+                            options={getLocationOptions()}
                             placeholder="Enter or select location"
                             className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                         />

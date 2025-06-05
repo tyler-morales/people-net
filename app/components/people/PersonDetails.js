@@ -1,5 +1,6 @@
 import InteractionsList from './InteractionsList';
 import FormDropdown from '../ui/FormDropdown';
+import { commonCities } from '../../lib/city-data';
 
 export default function PersonDetails({
     person,
@@ -22,6 +23,13 @@ export default function PersonDetails({
     const getUniqueValues = (field) => {
         const values = people.map(person => person[field]).filter(Boolean);
         return [...new Set(values)].sort();
+    };
+
+    // Enhanced location options - combine existing data with common cities
+    const getLocationOptions = () => {
+        const existingLocations = getUniqueValues('location');
+        const allLocations = [...new Set([...existingLocations, ...commonCities])];
+        return allLocations.sort();
     };
 
     return (
@@ -80,7 +88,7 @@ export default function PersonDetails({
                         onChange={(e) => handleEditChange(e, person.id)}
                         onFocus={(e) => handleFieldFocus(person.id, 'location', e.target.value)}
                         onBlur={(e) => handleInlineBlur(e, person.id, 'location')}
-                        options={getUniqueValues('location')}
+                        options={getLocationOptions()}
                         placeholder="Enter or select location"
                         className="w-full border border-gray-300 rounded px-3 py-2"
                     />
