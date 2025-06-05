@@ -15,6 +15,7 @@ export default function TableView({
     const [editingDateId, setEditingDateId] = useState(null);
     const [editingField, setEditingField] = useState(null);
     const [showAddForm, setShowAddForm] = useState(false);
+    const [sortBy, setSortBy] = useState('none'); // 'none', 'name-asc', 'name-desc', 'date-asc', 'date-desc'
 
     const [newPerson, setNewPerson] = useState({
         name: '',
@@ -36,6 +37,34 @@ export default function TableView({
         },
         interactions: []
     });
+
+    // Sorting function
+    const getSortedPeople = () => {
+        if (sortBy === 'none') return people;
+
+        const sorted = [...people].sort((a, b) => {
+            switch (sortBy) {
+                case 'name-asc':
+                    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+                case 'name-desc':
+                    return b.name.toLowerCase().localeCompare(a.name.toLowerCase());
+                case 'date-asc':
+                    const dateA = a.dateMet ? new Date(a.dateMet) : new Date(0);
+                    const dateB = b.dateMet ? new Date(b.dateMet) : new Date(0);
+                    return dateA - dateB;
+                case 'date-desc':
+                    const dateA2 = a.dateMet ? new Date(a.dateMet) : new Date(0);
+                    const dateB2 = b.dateMet ? new Date(b.dateMet) : new Date(0);
+                    return dateB2 - dateA2;
+                default:
+                    return 0;
+            }
+        });
+
+        return sorted;
+    };
+
+    const sortedPeople = getSortedPeople();
 
     // Helper to get nested property value
     const getFieldValue = (person, fieldName) => {
@@ -612,9 +641,42 @@ export default function TableView({
             <table className="w-full table-auto border border-black mb-4">
                 <thead>
                     <tr className="bg-blue-100">
-                        <th className="text-left p-2 border-b">Name</th>
+                        <th className="text-left p-2 border-b">
+                            <button
+                                onClick={() => {
+                                    if (sortBy === 'name-asc') {
+                                        setSortBy('name-desc');
+                                    } else {
+                                        setSortBy('name-asc');
+                                    }
+                                }}
+                                className="flex items-center gap-1 hover:text-blue-700"
+                            >
+                                Name
+                                {sortBy === 'name-asc' && <span className="text-blue-600">↑</span>}
+                                {sortBy === 'name-desc' && <span className="text-blue-600">↓</span>}
+                                {!sortBy.startsWith('name') && <span className="text-gray-400">↕</span>}
+                            </button>
+                        </th>
                         <th className="text-left p-2 border-b">Company</th>
                         <th className="text-left p-2 border-b">Role</th>
+                        <th className="text-left p-2 border-b">
+                            <button
+                                onClick={() => {
+                                    if (sortBy === 'date-asc') {
+                                        setSortBy('date-desc');
+                                    } else {
+                                        setSortBy('date-asc');
+                                    }
+                                }}
+                                className="flex items-center gap-1 hover:text-blue-700"
+                            >
+                                Date Met
+                                {sortBy === 'date-asc' && <span className="text-blue-600">↑</span>}
+                                {sortBy === 'date-desc' && <span className="text-blue-600">↓</span>}
+                                {!sortBy.startsWith('date') && <span className="text-gray-400">↕</span>}
+                            </button>
+                        </th>
                         <th className="text-left p-2 border-b">
                             Connection Strength
                             <button
@@ -631,7 +693,7 @@ export default function TableView({
                     </tr>
                 </thead>
                 <tbody>
-                    {people.map((person, index) => (
+                    {sortedPeople.map((person, index) => (
                         <Fragment key={person.id}>
                             <tr className={`border-t ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
                                 <td className="p-2 border-b">
@@ -704,6 +766,30 @@ export default function TableView({
                                     )}
                                 </td>
                                 <td className="p-2 border-b">
+                                    {editingField === `${person.id}-dateMet` ? (
+                                        <input
+                                            type="date"
+                                            name="dateMet"
+                                            value={person.dateMet || ''}
+                                            onFocus={(e) => handleFieldFocus(person.id, 'dateMet', e.target.value)}
+                                            onChange={(e) => handleEditChange(e, person.id)}
+                                            onBlur={(e) => handleInlineBlur(e, person.id, 'dateMet')}
+                                            className="border p-1 w-full rounded"
+                                            autoFocus
+                                        />
+                                    ) : (
+                                        <div
+                                            className="border border-transparent p-1 rounded cursor-text hover:bg-gray-100"
+                                            onClick={() => handleInlineEdit(person.id, 'dateMet')}
+                                            onFocus={(e) => handleInlineEdit(person.id, 'dateMet')}
+                                            tabIndex="0"
+                                            title="Edit date met"
+                                        >
+                                            {person.dateMet ? new Date(person.dateMet).toLocaleDateString() : 'Add date met'}
+                                        </div>
+                                    )}
+                                </td>
+                                <td className="p-2 border-b">
                                     <select
                                         name="connection.strength"
                                         value={person.connection?.strength}
@@ -733,7 +819,7 @@ export default function TableView({
                             </tr>
                             {selectedPersonId === person.id && (
                                 <tr className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                                    <td colSpan={5} className="p-4">
+                                    <td colSpan={6} className="p-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             {/* Left Column - Basic Information */}
                                             <div className="space-y-4">
@@ -775,19 +861,6 @@ export default function TableView({
                                                         onBlur={(e) => handleInlineBlur(e, person.id, 'workHours')}
                                                         className="w-full border border-gray-300 rounded px-3 py-2"
                                                         placeholder="e.g., 9am-5pm EST"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Date Met</label>
-                                                    <input
-                                                        type="date"
-                                                        name="dateMet"
-                                                        value={person.dateMet || ''}
-                                                        onFocus={(e) => handleFieldFocus(person.id, 'dateMet', e.target.value)}
-                                                        onChange={(e) => handleEditChange(e, person.id)}
-                                                        onBlur={(e) => handleInlineBlur(e, person.id, 'dateMet')}
-                                                        className="w-full border border-gray-300 rounded px-3 py-2"
                                                     />
                                                 </div>
 
