@@ -16,7 +16,10 @@ export const initialPeople = [
             source: "you",
             type: "collaborated",
             strength: "working",
-            notes: "Walked me through technical aspects of the project repo."
+            notes: "Walked me through technical aspects of the project repo.",
+            introducedBy: null,
+            introducedByName: "",
+            introducedByType: "direct"
         }
     },
     {
@@ -36,7 +39,10 @@ export const initialPeople = [
             source: "you",
             type: "collaborated",
             strength: "working",
-            notes: "Helped demo and explain app architecture."
+            notes: "Helped demo and explain app architecture.",
+            introducedBy: "niranjan",
+            introducedByName: "",
+            introducedByType: "existing"
         }
     },
     {
@@ -56,7 +62,10 @@ export const initialPeople = [
             source: "you",
             type: "coordinated",
             strength: "fleeting",
-            notes: "Assisted with hardware provisioning."
+            notes: "Assisted with hardware provisioning.",
+            introducedBy: null,
+            introducedByName: "",
+            introducedByType: "direct"
         }
     },
     {
@@ -76,7 +85,10 @@ export const initialPeople = [
             source: "you",
             type: "collaborated",
             strength: "casual",
-            notes: "Worked together on front-end tickets."
+            notes: "Worked together on front-end tickets.",
+            introducedBy: "saswat-das",
+            introducedByName: "",
+            introducedByType: "existing"
         }
     },
     {
@@ -98,7 +110,10 @@ export const initialPeople = [
             source: "you",
             type: "coordinated",
             strength: "strong",
-            notes: "Manages flow and syncs; handles access and team communication."
+            notes: "Manages flow and syncs; handles access and team communication.",
+            introducedBy: null,
+            introducedByName: "HR Manager Sarah",
+            introducedByType: "external"
         }
     }
 ];
