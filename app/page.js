@@ -133,7 +133,18 @@ export default function Home() {
             <th className="text-left p-2 border-b">Name</th>
             <th className="text-left p-2 border-b">Company</th>
             <th className="text-left p-2 border-b">Role</th>
-            <th className="text-left p-2 border-b">Connection Strength</th>
+            <th className="text-left p-2 border-b">
+              Connection Strength
+              <button
+                className="ml-2 cursor-pointer text-sm rounded-full bg-blue-400 text-white w-[20px] h-[20px]"
+                popoverTarget="strength-tooltip"
+                popoverTargetAction="toggle"
+                title="Click for strength definitions"
+                style={{ anchorName: '--strength-button' }}
+              >
+                <span className="inline-block" style={{ marginRight: '2px' }}>?</span>
+              </button>
+            </th>
             <th className="text-left p-2 border-b">Actions</th>
           </tr>
         </thead>
@@ -153,8 +164,11 @@ export default function Home() {
                     />
                   ) : (
                     <div
-                      className="border border-transparent p-1 rounded cursor-pointer hover:bg-gray-100"
+                      className="border border-transparent p-1 rounded cursor-text hover:bg-gray-100"
                       onClick={() => handleInlineEdit(person.id, 'name')}
+                      onFocus={() => handleInlineEdit(person.id, 'name')}
+                      tabIndex="0"
+                      title="Edit name"
                     >
                       {person.name}
                     </div>
@@ -172,8 +186,11 @@ export default function Home() {
                     />
                   ) : (
                     <div
-                      className="border border-transparent p-1 rounded cursor-pointer hover:bg-gray-100"
+                      className="border border-transparent p-1 rounded cursor-text hover:bg-gray-100"
                       onClick={() => handleInlineEdit(person.id, 'company')}
+                      onFocus={() => handleInlineEdit(person.id, 'company')}
+                      tabIndex="0"
+                      title="Edit company"
                     >
                       {person.company}
                     </div>
@@ -191,8 +208,11 @@ export default function Home() {
                     />
                   ) : (
                     <div
-                      className="border border-transparent p-1 rounded cursor-pointer hover:bg-gray-100"
+                      className="border border-transparent p-1 rounded cursor-text hover:bg-blue-50"
                       onClick={() => handleInlineEdit(person.id, 'role')}
+                      onFocus={() => handleInlineEdit(person.id, 'role')}
+                      tabIndex="0"
+                      title="Edit role"
                     >
                       {person.role}
                     </div>
@@ -289,6 +309,29 @@ export default function Home() {
           ))}
         </tbody>
       </table>
+
+      <div
+        id="strength-tooltip"
+        popover="auto"
+        className="bg-white border border-gray-300 rounded-lg shadow-lg p-4 w-96"
+        style={{
+          positionAnchor: '--strength-button',
+          left: 'anchor(left)',
+          top: 'anchor(bottom)',
+          transform: 'translateX(-100%)',
+          marginTop: '8px'
+        }}
+      >
+        <div className="mb-2 font-semibold">Relationship Strength Tiers</div>
+        <div className="space-y-2 text-sm">
+          <div><strong>Fleeting (1):</strong> Brief interaction, no lasting impact</div>
+          <div><strong>Acquaintance (2):</strong> Light connection, you know <em>of</em> them</div>
+          <div><strong>Casual (3):</strong> Friendly or familiar, occasional conversations</div>
+          <div><strong>Working (4):</strong> Collaborated together on a project</div>
+          <div><strong>Strong (5):</strong> Meaningful shared history, solid trust</div>
+          <div><strong>Core (6):</strong> Foundational relationship, emotionally defining</div>
+        </div>
+      </div>
     </main>
   );
 }
