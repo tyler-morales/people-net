@@ -43,6 +43,8 @@ export function useUndo(showToast) {
             undoMessage = `Restored ${lastAction.oldValue}`;
         } else if (lastAction.action === 'add' && lastAction.oldValue) {
             undoMessage = `Removed ${lastAction.oldValue}`;
+        } else if (lastAction.action === 'batchDelete') {
+            undoMessage = `Restored ${lastAction.oldValue}`;
         }
 
         showToast(undoMessage, 'info');

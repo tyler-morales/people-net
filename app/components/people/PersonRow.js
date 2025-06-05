@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import ConnectionStrengthSelector from '../ui/ConnectionStrengthSelector';
+import SelectionCheckbox from '../ui/SelectionCheckbox';
 import PersonDetails from './PersonDetails';
 
 export default function PersonRow({
@@ -15,6 +16,9 @@ export default function PersonRow({
     handleFieldFocus,
     handleDeletePerson,
     showToast,
+    // Selection props
+    isSelected,
+    onToggleSelect,
     // Person details props
     handleInteractionChange,
     handleInteractionAdd,
@@ -29,6 +33,13 @@ export default function PersonRow({
     return (
         <Fragment>
             <tr className={`border-t ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
+                <td className="p-2 border-b w-12">
+                    <SelectionCheckbox
+                        checked={isSelected}
+                        onChange={onToggleSelect}
+                        aria-label={`Select ${person.name}`}
+                    />
+                </td>
                 <td className="p-2 border-b">
                     {editingField === `${person.id}-name` ? (
                         <input
@@ -151,7 +162,7 @@ export default function PersonRow({
             </tr>
             {selectedPersonId === person.id && (
                 <tr className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                    <td colSpan={6} className="p-4">
+                    <td colSpan={7} className="p-4">
                         <PersonDetails
                             person={person}
                             people={people}

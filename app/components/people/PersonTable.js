@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import SortableHeader from '../ui/SortableHeader';
 import ConnectionStrengthTooltip from '../ui/ConnectionStrengthTooltip';
+import SelectionCheckbox from '../ui/SelectionCheckbox';
+import BatchActionsBar from '../ui/BatchActionsBar';
 import PersonRow from './PersonRow';
 import { usePeopleSort } from '../../hooks/people/usePeopleSort';
 import { usePersonEditor } from '../../hooks/people/usePersonEditor';
+import { useBatchSelection } from '../../hooks/people/useBatchSelection';
 
 export default function PersonTable({
     people,
@@ -23,6 +26,17 @@ export default function PersonTable({
         handleInlineEdit,
         handleInlineBlur
     } = usePersonEditor();
+
+    const {
+        selectedCount,
+        isAllSelected,
+        isIndeterminate,
+        selectedPeople,
+        toggleSelectAll,
+        toggleSelectPerson,
+        clearSelection,
+        isSelected
+    } = useBatchSelection(people);
 
     const handleEditChange = (e, id) => {
         const { name, value } = e.target;
@@ -201,66 +215,106 @@ export default function PersonTable({
         showToast(`Deleted ${personToDelete.name} from your network`, 'error');
     };
 
+    const handleBatchDelete = () => {
+        if (selectedCount === 0) return;
+
+        // Save undo state for batch delete
+        const selectedPersonsData = selectedPeople.map(person => ({
+            id: person.id,
+            name: person.name,
+            data: person
+        }));
+
+        // Save a batch undo state
+        saveUndoState('batchDelete', null, null, `${selectedCount} people`, people);
+
+        // Remove selected people
+        setPeople(prev => prev.filter(person => !isSelected(person.id)));
+
+        // Show toast and clear selection
+        showToast(`Deleted ${selectedCount} ${selectedCount === 1 ? 'person' : 'people'} from your network`, 'error');
+        clearSelection();
+    };
+
     return (
-        <table className="w-full table-auto border border-black mb-4">
-            <thead>
-                <tr className="bg-blue-100">
-                    <SortableHeader
-                        sortKey="name"
-                        currentSort={sortBy}
-                        onSortChange={setSortBy}
-                    >
-                        Name
-                    </SortableHeader>
-                    <th className="text-left p-2 border-b">Company</th>
-                    <th className="text-left p-2 border-b">Role</th>
-                    <SortableHeader
-                        sortKey="date"
-                        currentSort={sortBy}
-                        onSortChange={setSortBy}
-                    >
-                        Date Met
-                    </SortableHeader>
-                    <th className="text-left p-2 border-b">
-                        Connection Strength
-                        <ConnectionStrengthTooltip />
-                    </th>
-                    <th className="text-left p-2 border-b">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {sortedPeople.map((person, index) => (
-                    <PersonRow
-                        key={person.id}
-                        person={person}
-                        index={index}
-                        people={people}
-                        selectedPersonId={selectedPersonId}
-                        setSelectedPersonId={setSelectedPersonId}
-                        editingField={editingField}
-                        handleInlineEdit={(personId, field) =>
-                            handleInlineEdit(personId, field, handleFieldFocus, people)
-                        }
-                        handleInlineBlur={(e, id, fieldName) =>
-                            handleInlineBlur(e, id, fieldName, handleEditBlur)
-                        }
-                        handleEditChange={handleEditChange}
-                        handleFieldFocus={handleFieldFocus}
-                        handleDeletePerson={handleDeletePerson}
-                        showToast={showToast}
-                        // Person details props
-                        handleInteractionChange={handleInteractionChange}
-                        handleInteractionAdd={handleInteractionAdd}
-                        handleInteractionRemove={handleInteractionRemove}
-                        handleDateEditStart={handleDateEditStart}
-                        editingDateId={editingDateId}
-                        handleInteractionDateChange={handleInteractionDateChange}
-                        setEditingDateId={setEditingDateId}
-                        originalValues={originalValues}
-                        setOriginalValues={setOriginalValues}
-                    />
-                ))}
-            </tbody>
-        </table>
+        <>
+            <BatchActionsBar
+                selectedCount={selectedCount}
+                onBatchDelete={handleBatchDelete}
+                onClearSelection={clearSelection}
+            />
+
+            <table className="w-full table-auto border border-black mb-4">
+                <thead>
+                    <tr className="bg-blue-100">
+                        <th className="text-left p-2 border-b w-12">
+                            <SelectionCheckbox
+                                checked={isAllSelected}
+                                indeterminate={isIndeterminate}
+                                onChange={toggleSelectAll}
+                                aria-label="Select all people"
+                            />
+                        </th>
+                        <SortableHeader
+                            sortKey="name"
+                            currentSort={sortBy}
+                            onSortChange={setSortBy}
+                        >
+                            Name
+                        </SortableHeader>
+                        <th className="text-left p-2 border-b">Company</th>
+                        <th className="text-left p-2 border-b">Role</th>
+                        <SortableHeader
+                            sortKey="date"
+                            currentSort={sortBy}
+                            onSortChange={setSortBy}
+                        >
+                            Date Met
+                        </SortableHeader>
+                        <th className="text-left p-2 border-b">
+                            Connection Strength
+                            <ConnectionStrengthTooltip />
+                        </th>
+                        <th className="text-left p-2 border-b">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {sortedPeople.map((person, index) => (
+                        <PersonRow
+                            key={person.id}
+                            person={person}
+                            index={index}
+                            people={people}
+                            selectedPersonId={selectedPersonId}
+                            setSelectedPersonId={setSelectedPersonId}
+                            editingField={editingField}
+                            handleInlineEdit={(personId, field) =>
+                                handleInlineEdit(personId, field, handleFieldFocus, people)
+                            }
+                            handleInlineBlur={(e, id, fieldName) =>
+                                handleInlineBlur(e, id, fieldName, handleEditBlur)
+                            }
+                            handleEditChange={handleEditChange}
+                            handleFieldFocus={handleFieldFocus}
+                            handleDeletePerson={handleDeletePerson}
+                            showToast={showToast}
+                            // Selection props
+                            isSelected={isSelected(person.id)}
+                            onToggleSelect={() => toggleSelectPerson(person.id)}
+                            // Person details props
+                            handleInteractionChange={handleInteractionChange}
+                            handleInteractionAdd={handleInteractionAdd}
+                            handleInteractionRemove={handleInteractionRemove}
+                            handleDateEditStart={handleDateEditStart}
+                            editingDateId={editingDateId}
+                            handleInteractionDateChange={handleInteractionDateChange}
+                            setEditingDateId={setEditingDateId}
+                            originalValues={originalValues}
+                            setOriginalValues={setOriginalValues}
+                        />
+                    ))}
+                </tbody>
+            </table>
+        </>
     );
 } 
