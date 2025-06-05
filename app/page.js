@@ -6,6 +6,7 @@ import { useUndo } from "./hooks/useUndo";
 import TabNavigation from "./components/TabNavigation";
 import TableView from "./components/TableView";
 import GraphView from "./components/GraphView";
+import GlobeView from "./components/GlobeView";
 import QuickNote from "./components/QuickNote";
 import Toast from "./components/Toast";
 
@@ -86,6 +87,19 @@ export default function Home() {
     return () => window.removeEventListener('undo-requested', handleUndoRequest);
   }, [handleUndo]);
 
+  function getTabSubtitle() {
+    switch (activeTab) {
+      case 'table':
+        return 'Manage your professional network in a table format.';
+      case 'graph':
+        return 'Visual network of your professional relationships.';
+      case 'globe':
+        return 'Geographic visualization of your global network.';
+      default:
+        return 'Manage your professional network.';
+    }
+  }
+
   // Show loading state until data is loaded
   if (!isLoaded) {
     return (
@@ -108,13 +122,10 @@ export default function Home() {
       />
 
       <header className="my-4">
-                <div>
+        <div>
           <h1 className="text-4xl font-bold">🌐 PeopleNet</h1>
           <h2 className="text-lg text-gray-600">
-            {activeTab === 'table'
-              ? 'Manage your professional network in a table format.'
-              : 'Visual network of your professional relationships.'
-            }
+            {getTabSubtitle()}
           </h2>
           <p className="text-sm text-gray-500 mt-1">
             {people.length === 0
@@ -122,7 +133,7 @@ export default function Home() {
               : `${people.length} contact${people.length === 1 ? '' : 's'} in your network`
             }
           </p>
-                </div>
+        </div>
       </header>
 
       {/* Render content based on active tab */}
@@ -135,9 +146,11 @@ export default function Home() {
           handleFieldFocus={handleFieldFocus}
           originalValues={originalValues}
           setOriginalValues={setOriginalValues}
-                    />
-                  ) : (
+        />
+      ) : activeTab === 'graph' ? (
         <GraphView people={people} />
+      ) : (
+        <GlobeView people={people} />
       )}
 
       {/* Floating Quick Note Button */}

@@ -30,8 +30,8 @@ export default function GraphView({ people }) {
 
     return (
         <div className="flex gap-6">
-            {/* Graph */}
-            <div className="flex-1">
+            {/* Graph - 70% width */}
+            <div className="w-[70%]">
                 {/* Filter Controls */}
                 <div className="mb-4 flex items-center gap-6">
                     <div className="flex items-center gap-4">
@@ -164,8 +164,8 @@ export default function GraphView({ people }) {
                 </svg>
             </div>
 
-            {/* Legend & Details */}
-            <div className="w-80 space-y-6">
+            {/* Legend & Details - 30% width */}
+            <div className="w-[30%] space-y-6">
                 {/* Connection Types Legend */}
                 <div className="bg-white p-4 rounded-lg border border-gray-300">
                     <h3 className="font-semibold mb-3">Connection Types</h3>
