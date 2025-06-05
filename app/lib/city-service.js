@@ -10,11 +10,16 @@ class CityService {
         this.debounceTimers = new Map();
         this.apiUrl = 'https://api.api-ninjas.com/v1/city';
 
-        // Rate limiting
-        this.requestCount = 0;
+        // Rate limiting with persistent storage
         this.requestLimit = 100; // Max 100 API calls per session
-        this.lastRequestTime = 0;
         this.minRequestInterval = 1000; // Minimum 1 second between requests
+
+        // Load persistent API usage data
+        this._loadApiUsageData();
+
+        // Console logging easter egg
+        this.consoleLoggedRequests = 0;
+        this.maxConsoleRequests = 2;
 
         // Popular cities that don't need API calls
         this.popularCities = [
@@ -22,7 +27,8 @@ class CityService {
             'London, UK', 'Paris, France', 'Berlin, Germany', 'Tokyo, Japan',
             'Mumbai, India', 'Delhi, India', 'Bangalore, India', 'Sydney, Australia',
             'Toronto, Canada', 'Vancouver, Canada', 'Mexico City, Mexico',
-            'São Paulo, Brazil', 'Singapore', 'Hong Kong', 'Seoul, South Korea'
+            'São Paulo, Brazil', 'Singapore', 'Hong Kong', 'Seoul, South Korea',
+            'Portland, USA', 'Portland, OR, USA'
         ];
 
         // Prefetch popular cities on initialization
@@ -99,16 +105,176 @@ class CityService {
         });
     }
 
+    // Load API usage data from localStorage (SSR-safe)
+    _loadApiUsageData() {
+        try {
+            // Check if we're in browser environment
+            if (typeof window === 'undefined' || !window.localStorage) {
+                this.requestCount = 0;
+                this.lastRequestTime = 0;
+                return;
+            }
+
+            const saved = localStorage.getItem('cityService_apiUsage');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                this.requestCount = parsed.requestCount || 0;
+                this.lastRequestTime = parsed.lastRequestTime || 0;
+
+                console.log(`Loaded API usage: ${this.requestCount}/${this.requestLimit} calls used`);
+            } else {
+                this.requestCount = 0;
+                this.lastRequestTime = 0;
+            }
+        } catch (error) {
+            console.warn('Failed to load API usage data:', error);
+            this.requestCount = 0;
+            this.lastRequestTime = 0;
+        }
+    }
+
+    // Save API usage data to localStorage (SSR-safe)
+    _saveApiUsageData() {
+        try {
+            // Check if we're in browser environment
+            if (typeof window === 'undefined' || !window.localStorage) {
+                return;
+            }
+
+            const usageData = {
+                requestCount: this.requestCount,
+                lastRequestTime: this.lastRequestTime,
+                lastUpdated: Date.now()
+            };
+
+            localStorage.setItem('cityService_apiUsage', JSON.stringify(usageData));
+        } catch (error) {
+            console.warn('Failed to save API usage data:', error);
+        }
+    }
+
+    // Enhanced logging method that uses Zustand store
+    _emitLog(logEntry) {
+        // Only import and use the store in browser environment
+        if (typeof window !== 'undefined') {
+            try {
+                // Dynamic import to avoid SSR issues
+                import('../stores/terminalLogStore.js').then(({ default: useTerminalLogStore }) => {
+                    const { addLog } = useTerminalLogStore.getState();
+                    addLog(logEntry);
+                }).catch(error => {
+                    console.warn('Failed to log to terminal store:', error);
+                });
+            } catch (error) {
+                console.warn('Terminal logging not available:', error);
+            }
+        }
+    }
+
+    // Increment saved API calls counter
+    _incrementSavedCalls() {
+        if (typeof window !== 'undefined') {
+            try {
+                import('../stores/terminalLogStore.js').then(({ default: useTerminalLogStore }) => {
+                    const { incrementSavedCalls } = useTerminalLogStore.getState();
+                    incrementSavedCalls();
+                }).catch(error => {
+                    console.warn('Failed to increment saved calls:', error);
+                });
+            } catch (error) {
+                console.warn('Saved calls tracking not available:', error);
+            }
+        }
+    }
+
+    // Synchronous cache lookup - checks all caches without triggering API calls
+    getCachedResults(query, options = {}) {
+        console.log(`🔍 Cache lookup for: "${query}"`);
+
+        // Strategy 1: Minimum length requirement
+        if (query.length < 3) {
+            console.log(`❌ Query too short (${query.length} < 3), using static fallback`);
+            return this._getStaticFallback(query);
+        }
+
+        // Strategy 2: Check popular cities first
+        const popularMatch = this._checkPopularCities(query);
+        if (popularMatch.length > 0) {
+            console.log(`✅ Found in popular cities: ${popularMatch.length} results`);
+            return popularMatch;
+        }
+
+        // Strategy 3: Check persistent cache
+        const cacheKey = this._getCacheKey(query, options);
+        console.log(`🔑 Cache key: "${cacheKey}"`);
+        console.log(`📦 Persistent cache size: ${this.persistentCache.size}`);
+        console.log(`🗂️ Persistent cache keys:`, Array.from(this.persistentCache.keys()));
+
+        const persistentCached = this.persistentCache.get(cacheKey);
+        if (persistentCached && Date.now() - persistentCached.timestamp < this.persistentCacheExpiry) {
+            console.log(`✅ Found in persistent cache, age: ${Date.now() - persistentCached.timestamp}ms`);
+            this._incrementSavedCalls(); // Count this as a saved API call
+            this._emitLog({
+                type: 'cache',
+                action: 'CACHE_HIT',
+                key: cacheKey,
+                source: 'persistent',
+                query: query
+            });
+            return persistentCached.data;
+        } else if (persistentCached) {
+            console.log(`⏰ Found in persistent cache but expired, age: ${Date.now() - persistentCached.timestamp}ms, expiry: ${this.persistentCacheExpiry}ms`);
+        }
+
+        // Strategy 4: Check memory cache
+        console.log(`💾 Memory cache size: ${this.cache.size}`);
+        console.log(`🗂️ Memory cache keys:`, Array.from(this.cache.keys()));
+
+        const cached = this.cache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
+            console.log(`✅ Found in memory cache, age: ${Date.now() - cached.timestamp}ms`);
+            this._incrementSavedCalls(); // Count this as a saved API call
+            this._emitLog({
+                type: 'cache',
+                action: 'CACHE_HIT',
+                key: cacheKey,
+                source: 'memory',
+                query: query
+            });
+            return cached.data;
+        } else if (cached) {
+            console.log(`⏰ Found in memory cache but expired, age: ${Date.now() - cached.timestamp}ms, expiry: ${this.cacheExpiry}ms`);
+        }
+
+        // No cached results found
+        console.log(`❌ No cached results found for "${query}"`);
+        return null;
+    }
+
     // Enhanced search with multiple optimization strategies
     async searchCities(query, options = {}) {
         // Strategy 1: Minimum length requirement (increased)
         if (query.length < 3) {
+            this._emitLog({
+                type: 'fallback',
+                reason: 'QUERY_TOO_SHORT',
+                query: query,
+                minLength: 3,
+                fallback_count: this._getStaticFallback(query).length
+            });
             return this._getStaticFallback(query);
         }
 
         // Strategy 2: Check if this is a popular city first
         const popularMatch = this._checkPopularCities(query);
         if (popularMatch.length > 0) {
+            this._emitLog({
+                type: 'cache',
+                action: 'POPULAR_CITY_HIT',
+                query: query,
+                source: 'popular',
+                results: popularMatch.length
+            });
             return popularMatch;
         }
 
@@ -123,11 +289,22 @@ class CityService {
                     const results = await this._performSearch(query, options);
                     resolve(results);
                 } catch (error) {
+                    this._emitLog({
+                        type: 'error',
+                        message: `Search failed for "${query}": ${error.message}`,
+                        query: query
+                    });
                     reject(error);
                 } finally {
                     this.debounceTimers.delete(query);
                 }
             }, 800); // Increased debounce time
+
+            // Log the debounced search
+            this._emitLog({
+                type: 'system',
+                message: `Search queued for "${query}" (800ms debounce)`
+            });
 
             this.debounceTimers.set(query, timer);
         });
@@ -136,7 +313,7 @@ class CityService {
     // Check popular cities for quick matches
     _checkPopularCities(query) {
         const lowerQuery = query.toLowerCase();
-        return this.popularCities
+        const matches = this.popularCities
             .filter(city => city.toLowerCase().includes(lowerQuery))
             .slice(0, 10)
             .map(city => ({
@@ -148,6 +325,13 @@ class CityService {
                 population: null,
                 isCapital: false
             }));
+
+        // If we found matches, we saved an API call
+        if (matches.length > 0) {
+            this._incrementSavedCalls();
+        }
+
+        return matches;
     }
 
     async _performSearch(query, options = {}) {
@@ -157,6 +341,14 @@ class CityService {
         const persistentCached = this.persistentCache.get(cacheKey);
         if (persistentCached && Date.now() - persistentCached.timestamp < this.persistentCacheExpiry) {
             console.log('Using persistent cache for:', query);
+            this._incrementSavedCalls(); // Count this as a saved API call
+            this._emitLog({
+                type: 'cache',
+                action: 'CACHE_HIT',
+                key: cacheKey,
+                source: 'persistent',
+                query: query
+            });
             return persistentCached.data;
         }
 
@@ -164,12 +356,26 @@ class CityService {
         const cached = this.cache.get(cacheKey);
         if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
             console.log('Using memory cache for:', query);
+            this._incrementSavedCalls(); // Count this as a saved API call
+            this._emitLog({
+                type: 'cache',
+                action: 'CACHE_HIT',
+                key: cacheKey,
+                source: 'memory',
+                query: query
+            });
             return cached.data;
         }
 
         // Strategy 6: Rate limiting
         if (this.requestCount >= this.requestLimit) {
             console.warn('API request limit reached. Using fallback.');
+            this._emitLog({
+                type: 'fallback',
+                reason: 'RATE_LIMIT_EXCEEDED',
+                query: query,
+                fallback_count: this._getStaticFallback(query).length
+            });
             return this._getStaticFallback(query);
         }
 
@@ -178,6 +384,14 @@ class CityService {
         const timeSinceLastRequest = now - this.lastRequestTime;
         if (timeSinceLastRequest < this.minRequestInterval) {
             console.log('Request throttled. Using fallback.');
+            this._emitLog({
+                type: 'fallback',
+                reason: 'REQUEST_THROTTLED',
+                query: query,
+                timeSinceLastRequest: timeSinceLastRequest,
+                minInterval: this.minRequestInterval,
+                fallback_count: this._getStaticFallback(query).length
+            });
             return this._getStaticFallback(query);
         }
 
@@ -200,21 +414,79 @@ class CityService {
 
             console.log(`Making API call ${this.requestCount + 1}/${this.requestLimit} for:`, cityName);
 
+            // Prepare the request URL
+            const requestUrl = `${this.apiUrl}?${params}`;
+
+            // Easter egg: Console log first 2 requests with terminal style
+            if (this.consoleLoggedRequests < this.maxConsoleRequests) {
+                const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                console.log(`%c${timestamp} %c🌐 API REQUEST ${this.consoleLoggedRequests + 1}`,
+                    'color: #666; font-family: monospace;',
+                    'color: #00ff00; font-family: monospace; font-weight: bold;'
+                );
+                console.log(`%c→ GET ${requestUrl}`, 'color: #00bcd4; font-family: monospace;');
+                console.log(`%c→ Headers: {"X-Api-Key": "***hidden***"}`, 'color: #666; font-family: monospace;');
+
+                this.consoleLoggedRequests++;
+
+                if (this.consoleLoggedRequests === this.maxConsoleRequests) {
+                    console.log(`%c💡 Developer Secret: Want to see ALL API activity? Press Ctrl+Shift+A to unlock the hidden developer console!`,
+                        'color: #ff9800; font-family: monospace; font-weight: bold; font-size: 12px;'
+                    );
+                }
+            }
+
+            // Log the API request
+            this._emitLog({
+                type: 'request',
+                method: 'GET',
+                url: requestUrl,
+                headers: { 'X-Api-Key': '***hidden***' },
+                query: cityName
+            });
+
             this.requestCount++;
             this.lastRequestTime = now;
 
-            const response = await fetch(`${this.apiUrl}?${params}`, {
+            // Save usage data to localStorage after increment
+            this._saveApiUsageData();
+
+            const response = await fetch(requestUrl, {
                 headers: {
                     'X-Api-Key': apiKey
                 }
             });
 
             if (!response.ok) {
+                this._emitLog({
+                    type: 'response',
+                    status: response.status,
+                    error: `API request failed: ${response.status}`,
+                    query: cityName
+                });
                 throw new Error(`API request failed: ${response.status}`);
             }
 
             const cities = await response.json();
             const formattedCities = cities.map(city => this._formatCity(city));
+
+            // Easter egg: Console log response for first 2 requests
+            if (this.consoleLoggedRequests <= this.maxConsoleRequests) {
+                console.log(`%c← HTTP 200 OK`, 'color: #4CAF50; font-family: monospace; font-weight: bold;');
+                console.log(`%c← Results: ${cities.length} cities found`, 'color: #4CAF50; font-family: monospace;');
+                if (cities.length > 0) {
+                    console.log(`%c← Sample: ${cities[0].name}, ${cities[0].country}`, 'color: #4CAF50; font-family: monospace;');
+                }
+            }
+
+            // Log the successful response
+            this._emitLog({
+                type: 'response',
+                status: 200,
+                data: cities.slice(0, 2), // Only show first 2 cities to keep logs readable
+                totalResults: cities.length,
+                query: cityName
+            });
 
             // Strategy 10: Dual caching (memory + persistent)
             const cacheData = {
@@ -337,12 +609,14 @@ class CityService {
         try {
             if (typeof window !== 'undefined' && window.localStorage) {
                 localStorage.removeItem('cityService_cache');
+                // Note: API usage data is intentionally NOT cleared here
+                // Use resetApiCounter() if you want to reset the API call limit
             }
         } catch (error) {
             console.warn('Failed to clear localStorage cache:', error);
         }
 
-        console.log('All caches cleared');
+        console.log('All caches cleared (API usage limit preserved)');
     }
 
     // Get usage statistics
@@ -356,10 +630,56 @@ class CityService {
         };
     }
 
+    // Get cached cities with timestamps
+    getCachedCities() {
+        const memoryCities = Array.from(this.cache.entries()).map(([key, value]) => ({
+            id: `memory-${key}`,
+            query: key.split('-')[0], // Extract query from cache key
+            source: 'memory',
+            timestamp: new Date(value.timestamp).toLocaleString(),
+            cities: value.data && value.data.length > 0
+                ? value.data.slice(0, 3).map(city => city.display).join(', ')
+                : 'No cities found',
+            totalResults: value.data ? value.data.length : 0,
+            age: Date.now() - value.timestamp
+        }));
+
+        const persistentCities = Array.from(this.persistentCache.entries()).map(([key, value]) => ({
+            id: `persistent-${key}`,
+            query: key.split('-')[0], // Extract query from cache key  
+            source: value.source || 'persistent',
+            timestamp: new Date(value.timestamp).toLocaleString(),
+            cities: value.data && value.data.length > 0
+                ? value.data.slice(0, 3).map(city => city.display).join(', ')
+                : 'No cities found',
+            totalResults: value.data ? value.data.length : 0,
+            age: Date.now() - value.timestamp
+        }));
+
+        // Combine and sort by timestamp (newest first)
+        const allCached = [...memoryCities, ...persistentCities]
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        return allCached;
+    }
+
     // Reset API call counter (useful for testing)
     resetApiCounter() {
         this.requestCount = 0;
-        console.log('API call counter reset');
+        this.lastRequestTime = 0;
+
+        // Clear localStorage data
+        this._saveApiUsageData();
+
+        console.log('API call counter reset and localStorage cleared');
+    }
+
+    // Test logging system (for debugging)
+    testLogging() {
+        this._emitLog({
+            type: 'system',
+            message: 'Test log entry - logging system is working!'
+        });
     }
 }
 

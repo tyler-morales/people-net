@@ -31,19 +31,43 @@ export default function DynamicCityPicker({
     // Search for cities when search term changes
     useEffect(() => {
         const searchCities = async () => {
+            console.log(`🎯 DynamicCityPicker search triggered for: "${searchTerm}", isOpen: ${isOpen}, value: "${value}"`);
+
             if (searchTerm.length < minSearchLength) {
+                console.log(`⏭️ Search term too short, clearing cities`);
                 setCities([]);
                 setError(null);
                 return;
             }
 
+            // First, try to get cached results synchronously
+            console.log(`🔄 Checking cache for: "${searchTerm}"`);
+            const cachedResults = cityService.getCachedResults(searchTerm);
+            if (cachedResults) {
+                console.log(`✅ Cache hit! Found ${cachedResults.length} cached results for "${searchTerm}"`);
+                setCities(cachedResults);
+                setError(null);
+                return;
+            }
+
+            // Only search if dropdown is open and no cached results were found
+            if (!isOpen && searchTerm === value) {
+                console.log(`⏸️ Dropdown not open and matches current value, skipping API search`);
+                // Don't search if this is just setting the initial/external value and no cache hit
+                setCities([]);
+                return;
+            }
+
+            console.log(`🌐 Making API call for: "${searchTerm}"`);
             setLoading(true);
             setError(null);
 
             try {
                 const results = await cityService.searchCities(searchTerm);
+                console.log(`📡 API call completed for "${searchTerm}", got ${results.length} results`);
                 setCities(results);
             } catch (err) {
+                console.error(`❌ API call failed for "${searchTerm}":`, err);
                 setError('Failed to search cities');
                 setCities([]);
                 console.error('City search error:', err);
@@ -53,7 +77,7 @@ export default function DynamicCityPicker({
         };
 
         searchCities();
-    }, [searchTerm, minSearchLength]);
+    }, [searchTerm, minSearchLength, isOpen, value]);
 
     // Handle clicking outside to close dropdown
     useEffect(() => {
