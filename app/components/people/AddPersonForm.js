@@ -1,4 +1,5 @@
 import ConnectionStrengthSelector from '../ui/ConnectionStrengthSelector';
+import FormDropdown from '../ui/FormDropdown';
 
 export default function AddPersonForm({
     newPerson,
@@ -23,6 +24,12 @@ export default function AddPersonForm({
                 [name]: value
             }));
         }
+    };
+
+    // Helper function to get unique values for dropdowns
+    const getUniqueValues = (field) => {
+        const values = people.map(person => person[field]).filter(Boolean);
+        return [...new Set(values)].sort();
     };
 
     return (
@@ -59,13 +66,13 @@ export default function AddPersonForm({
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Company
                         </label>
-                        <input
-                            type="text"
+                        <FormDropdown
                             name="company"
                             value={newPerson.company}
                             onChange={handleChange}
-                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-                            placeholder="Enter company"
+                            options={getUniqueValues('company')}
+                            placeholder="Enter or select company"
+                            className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                     </div>
 
@@ -73,13 +80,13 @@ export default function AddPersonForm({
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Team
                         </label>
-                        <input
-                            type="text"
+                        <FormDropdown
                             name="team"
                             value={newPerson.team}
                             onChange={handleChange}
-                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-                            placeholder="Enter team"
+                            options={getUniqueValues('team')}
+                            placeholder="Enter or select team"
+                            className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                     </div>
 
@@ -87,13 +94,13 @@ export default function AddPersonForm({
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Role
                         </label>
-                        <input
-                            type="text"
+                        <FormDropdown
                             name="role"
                             value={newPerson.role}
                             onChange={handleChange}
-                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-                            placeholder="Enter role"
+                            options={getUniqueValues('role')}
+                            placeholder="Enter or select role"
+                            className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                     </div>
 
@@ -101,13 +108,13 @@ export default function AddPersonForm({
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Location
                         </label>
-                        <input
-                            type="text"
+                        <FormDropdown
                             name="location"
                             value={newPerson.location}
                             onChange={handleChange}
-                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-                            placeholder="Enter location"
+                            options={getUniqueValues('location')}
+                            placeholder="Enter or select location"
+                            className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                     </div>
 
@@ -115,13 +122,13 @@ export default function AddPersonForm({
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Work Hours
                         </label>
-                        <input
-                            type="text"
+                        <FormDropdown
                             name="workHours"
                             value={newPerson.workHours}
                             onChange={handleChange}
-                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-                            placeholder="e.g., 9am-5pm EST"
+                            options={getUniqueValues('workHours')}
+                            placeholder="Enter or select work hours"
+                            className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                     </div>
 
@@ -224,68 +231,67 @@ export default function AddPersonForm({
                     </div>
                 </div>
 
-                {/* Connection Details */}
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Connection Type
-                        </label>
-                        <select
-                            name="connection.type"
-                            value={newPerson.connection.type}
-                            onChange={handleChange}
-                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-                        >
-                            <option value="collaborated">Collaborated</option>
-                            <option value="mentored">Mentored</option>
-                            <option value="coordinated">Coordinated</option>
-                            <option value="reviewed_code">Reviewed Code</option>
-                            <option value="led_meeting">Led Meeting</option>
-                            <option value="inspired_me">Inspired Me</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Connection Notes
-                        </label>
-                        <textarea
-                            name="connection.notes"
-                            value={newPerson.connection.notes}
-                            onChange={handleChange}
-                            rows="2"
-                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-                            placeholder="Describe how you connected..."
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Additional Notes
-                        </label>
-                        <textarea
-                            name="notes"
-                            value={newPerson.notes}
-                            onChange={handleChange}
-                            rows="2"
-                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-                            placeholder="Any additional information..."
-                        />
-                    </div>
+                {/* Connection Type */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Connection Type
+                    </label>
+                    <select
+                        name="connection.type"
+                        value={newPerson.connection.type}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+                    >
+                        <option value="collaborated">Collaborated</option>
+                        <option value="mentored">Mentored</option>
+                        <option value="coordinated">Coordinated</option>
+                        <option value="reviewed_code">Reviewed Code</option>
+                        <option value="led_meeting">Led Meeting</option>
+                        <option value="inspired_me">Inspired Me</option>
+                    </select>
                 </div>
 
-                {/* Form Actions */}
+                {/* Notes */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Notes
+                    </label>
+                    <textarea
+                        name="notes"
+                        value={newPerson.notes}
+                        onChange={handleChange}
+                        rows="3"
+                        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+                        placeholder="Additional notes about this person..."
+                    />
+                </div>
+
+                {/* Connection Notes */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Connection Notes
+                    </label>
+                    <textarea
+                        name="connection.notes"
+                        value={newPerson.connection.notes}
+                        onChange={handleChange}
+                        rows="2"
+                        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+                        placeholder="How you met, context of your relationship..."
+                    />
+                </div>
+
                 <div className="flex gap-3 pt-4">
                     <button
                         type="submit"
-                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded font-medium cursor-pointer"
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium cursor-pointer"
                     >
                         Add Person
                     </button>
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded font-medium cursor-pointer"
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-lg font-medium cursor-pointer"
                     >
                         Cancel
                     </button>

@@ -37,6 +37,45 @@ export function getStrokeWidth(strength) {
     return widthMap[strength] || 1;
 }
 
+// Build complete connection path by recursively tracing back through introducers
+export function buildFullConnectionPath(targetPerson, people) {
+    const path = [];
+    const visited = new Set(); // Prevent infinite loops
+
+    function tracePath(person) {
+        // Prevent infinite loops
+        if (visited.has(person.id)) {
+            return [];
+        }
+        visited.add(person.id);
+
+        // Base case: direct connection to you
+        if (person.connection?.introducedByType === 'direct' || !person.connection?.introducedBy) {
+            return ['You', person.name];
+        }
+
+        // External connection case
+        if (person.connection?.introducedByType === 'external') {
+            return ['You', person.connection.introducedByName, person.name];
+        }
+
+        // Recursive case: trace through the introducer
+        if (person.connection?.introducedByType === 'existing' && person.connection?.introducedBy) {
+            const introducer = people.find(p => p.id === person.connection.introducedBy);
+            if (introducer) {
+                const introducerPath = tracePath(introducer);
+                // Remove the last element (introducer's name) and add our path
+                return [...introducerPath, person.name];
+            }
+        }
+
+        // Fallback
+        return ['You', person.name];
+    }
+
+    return tracePath(targetPerson);
+}
+
 export function calculateGraphLayout(people, width, height) {
     const calculatedNodes = [
         { id: 'you', name: 'You', x: width / 2, y: height / 2, radius: 30, color: '#3b82f6' },

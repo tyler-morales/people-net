@@ -3,10 +3,15 @@ import SortableHeader from '../ui/SortableHeader';
 import ConnectionStrengthTooltip from '../ui/ConnectionStrengthTooltip';
 import SelectionCheckbox from '../ui/SelectionCheckbox';
 import BatchActionsBar from '../ui/BatchActionsBar';
+import GlobalSearch from '../ui/GlobalSearch';
+import ColumnFilters from '../ui/ColumnFilters';
+import FilterStatusBar from '../ui/FilterStatusBar';
+import FilterPresets from '../ui/FilterPresets';
 import PersonRow from './PersonRow';
 import { usePeopleSort } from '../../hooks/people/usePeopleSort';
 import { usePersonEditor } from '../../hooks/people/usePersonEditor';
 import { useBatchSelection } from '../../hooks/people/useBatchSelection';
+import { useTableFilters } from '../../hooks/people/useTableFilters';
 
 export default function PersonTable({
     people,
@@ -18,7 +23,25 @@ export default function PersonTable({
     setOriginalValues
 }) {
     const [selectedPersonId, setSelectedPersonId] = useState(null);
-    const { sortBy, setSortBy, sortedPeople } = usePeopleSort(people);
+    const [showColumnFilters, setShowColumnFilters] = useState(false);
+
+    // Use our new filtering hook
+    const {
+        globalSearch,
+        setGlobalSearch,
+        columnFilters,
+        updateColumnFilter,
+        updateDateRangeFilter,
+        clearAllFilters,
+        clearFilter,
+        filteredPeople,
+        hasActiveFilters,
+        getUniqueValues
+    } = useTableFilters(people);
+
+    // Apply sorting to filtered people instead of all people
+    const { sortBy, setSortBy, sortedPeople } = usePeopleSort(filteredPeople);
+
     const {
         editingField,
         editingDateId,
@@ -27,6 +50,7 @@ export default function PersonTable({
         handleInlineBlur
     } = usePersonEditor();
 
+    // Use filtered people for batch selection
     const {
         selectedCount,
         isAllSelected,
@@ -36,7 +60,20 @@ export default function PersonTable({
         toggleSelectPerson,
         clearSelection,
         isSelected
-    } = useBatchSelection(people);
+    } = useBatchSelection(sortedPeople);
+
+    // Handler for loading filter presets
+    const handleLoadPreset = (search, filters) => {
+        setGlobalSearch(search);
+        Object.entries(filters).forEach(([key, value]) => {
+            if (key === 'dateRange') {
+                updateDateRangeFilter(value.start, value.end);
+            } else {
+                updateColumnFilter(key, value);
+            }
+        });
+        showToast('Filter preset loaded', 'success');
+    };
 
     const handleEditChange = (e, id) => {
         const { name, value } = e.target;
@@ -238,6 +275,52 @@ export default function PersonTable({
 
     return (
         <>
+            {/* Search and Filter Interface */}
+            <div className="mb-6 space-y-8">
+                {/* Global Search */}
+                <div className="flex items-center gap-4">
+                    <GlobalSearch
+                        value={globalSearch}
+                        onChange={setGlobalSearch}
+                        placeholder="Search across all fields..."
+                    />
+                    <div className="text-sm text-gray-600">
+                        {filteredPeople.length} of {people.length} people
+                    </div>
+                </div>
+
+                {/* Filter Presets */}
+                <FilterPresets
+                    globalSearch={globalSearch}
+                    columnFilters={columnFilters}
+                    onLoadPreset={handleLoadPreset}
+                    hasActiveFilters={hasActiveFilters}
+                />
+
+                {/* Column Filters */}
+                <ColumnFilters
+                    columnFilters={columnFilters}
+                    updateColumnFilter={updateColumnFilter}
+                    updateDateRangeFilter={updateDateRangeFilter}
+                    clearFilter={clearFilter}
+                    getUniqueValues={getUniqueValues}
+                    isVisible={showColumnFilters}
+                    onToggle={() => setShowColumnFilters(!showColumnFilters)}
+                />
+
+                {/* Filter Status Bar */}
+                <FilterStatusBar
+                    globalSearch={globalSearch}
+                    columnFilters={columnFilters}
+                    hasActiveFilters={hasActiveFilters}
+                    filteredCount={filteredPeople.length}
+                    totalCount={people.length}
+                    clearAllFilters={clearAllFilters}
+                    clearFilter={clearFilter}
+                    updateColumnFilter={updateColumnFilter}
+                />
+            </div>
+
             <BatchActionsBar
                 selectedCount={selectedCount}
                 onBatchDelete={handleBatchDelete}
@@ -315,6 +398,19 @@ export default function PersonTable({
                     ))}
                 </tbody>
             </table>
+
+            {/* No results message */}
+            {sortedPeople.length === 0 && people.length > 0 && (
+                <div className="text-center py-8 text-gray-500">
+                    <p className="text-lg">No people match your current filters</p>
+                    <button
+                        onClick={clearAllFilters}
+                        className="mt-2 text-blue-600 hover:text-blue-800 underline"
+                    >
+                        Clear all filters
+                    </button>
+                </div>
+            )}
         </>
     );
 } 

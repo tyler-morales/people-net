@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import ConnectionStrengthSelector from '../ui/ConnectionStrengthSelector';
 import SelectionCheckbox from '../ui/SelectionCheckbox';
 import PersonDetails from './PersonDetails';
+import FormDropdown from '../ui/FormDropdown';
 
 export default function PersonRow({
     person,
@@ -30,6 +31,12 @@ export default function PersonRow({
     originalValues,
     setOriginalValues
 }) {
+    // Helper function to get unique values for dropdowns
+    const getUniqueValues = (field) => {
+        const values = people.map(person => person[field]).filter(Boolean);
+        return [...new Set(values)].sort();
+    };
+
     return (
         <Fragment>
             <tr className={`border-t ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
@@ -65,12 +72,14 @@ export default function PersonRow({
                 </td>
                 <td className="p-2 border-b">
                     {editingField === `${person.id}-company` ? (
-                        <input
+                        <FormDropdown
                             name="company"
                             value={person.company}
-                            onFocus={(e) => handleFieldFocus(person.id, 'company', e.target.value)}
                             onChange={(e) => handleEditChange(e, person.id)}
+                            onFocus={(e) => handleFieldFocus(person.id, 'company', e.target.value)}
                             onBlur={(e) => handleInlineBlur(e, person.id, 'company')}
+                            options={getUniqueValues('company')}
+                            placeholder="Enter or select company"
                             className="border p-1 w-full rounded"
                             autoFocus
                         />
@@ -88,12 +97,14 @@ export default function PersonRow({
                 </td>
                 <td className="p-2 border-b">
                     {editingField === `${person.id}-role` ? (
-                        <input
+                        <FormDropdown
                             name="role"
                             value={person.role}
-                            onFocus={(e) => handleFieldFocus(person.id, 'role', e.target.value)}
                             onChange={(e) => handleEditChange(e, person.id)}
+                            onFocus={(e) => handleFieldFocus(person.id, 'role', e.target.value)}
                             onBlur={(e) => handleInlineBlur(e, person.id, 'role')}
+                            options={getUniqueValues('role')}
+                            placeholder="Enter or select role"
                             className="border p-1 w-full rounded"
                             autoFocus
                         />

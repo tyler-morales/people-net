@@ -1,4 +1,5 @@
 import InteractionsList from './InteractionsList';
+import FormDropdown from '../ui/FormDropdown';
 
 export default function PersonDetails({
     person,
@@ -17,6 +18,12 @@ export default function PersonDetails({
     setOriginalValues,
     showToast
 }) {
+    // Helper function to get unique values for dropdowns
+    const getUniqueValues = (field) => {
+        const values = people.map(person => person[field]).filter(Boolean);
+        return [...new Set(values)].sort();
+    };
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column - Basic Information */}
@@ -25,40 +32,71 @@ export default function PersonDetails({
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Team</label>
-                    <input
+                    <FormDropdown
                         name="team"
                         value={person.team || ''}
-                        onFocus={(e) => handleFieldFocus(person.id, 'team', e.target.value)}
                         onChange={(e) => handleEditChange(e, person.id)}
+                        onFocus={(e) => handleFieldFocus(person.id, 'team', e.target.value)}
                         onBlur={(e) => handleInlineBlur(e, person.id, 'team')}
+                        options={getUniqueValues('team')}
+                        placeholder="Enter or select team"
                         className="w-full border border-gray-300 rounded px-3 py-2"
-                        placeholder="Enter team"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <FormDropdown
+                        name="role"
+                        value={person.role || ''}
+                        onChange={(e) => handleEditChange(e, person.id)}
+                        onFocus={(e) => handleFieldFocus(person.id, 'role', e.target.value)}
+                        onBlur={(e) => handleInlineBlur(e, person.id, 'role')}
+                        options={getUniqueValues('role')}
+                        placeholder="Enter or select role"
+                        className="w-full border border-gray-300 rounded px-3 py-2"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                    <FormDropdown
+                        name="company"
+                        value={person.company || ''}
+                        onChange={(e) => handleEditChange(e, person.id)}
+                        onFocus={(e) => handleFieldFocus(person.id, 'company', e.target.value)}
+                        onBlur={(e) => handleInlineBlur(e, person.id, 'company')}
+                        options={getUniqueValues('company')}
+                        placeholder="Enter or select company"
+                        className="w-full border border-gray-300 rounded px-3 py-2"
                     />
                 </div>
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                    <input
+                    <FormDropdown
                         name="location"
                         value={person.location || ''}
-                        onFocus={(e) => handleFieldFocus(person.id, 'location', e.target.value)}
                         onChange={(e) => handleEditChange(e, person.id)}
+                        onFocus={(e) => handleFieldFocus(person.id, 'location', e.target.value)}
                         onBlur={(e) => handleInlineBlur(e, person.id, 'location')}
+                        options={getUniqueValues('location')}
+                        placeholder="Enter or select location"
                         className="w-full border border-gray-300 rounded px-3 py-2"
-                        placeholder="Enter location"
                     />
                 </div>
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Work Hours</label>
-                    <input
+                    <FormDropdown
                         name="workHours"
                         value={person.workHours || ''}
-                        onFocus={(e) => handleFieldFocus(person.id, 'workHours', e.target.value)}
                         onChange={(e) => handleEditChange(e, person.id)}
+                        onFocus={(e) => handleFieldFocus(person.id, 'workHours', e.target.value)}
                         onBlur={(e) => handleInlineBlur(e, person.id, 'workHours')}
+                        options={getUniqueValues('workHours')}
+                        placeholder="Enter or select work hours"
                         className="w-full border border-gray-300 rounded px-3 py-2"
-                        placeholder="e.g., 9am-5pm EST"
                     />
                 </div>
 
@@ -198,21 +236,16 @@ export default function PersonDetails({
             </div>
 
             {/* Interactions Section - Full Width */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 mt-6">
                 <InteractionsList
                     person={person}
-                    onInteractionChange={handleInteractionChange}
-                    onInteractionAdd={handleInteractionAdd}
-                    onInteractionRemove={handleInteractionRemove}
-                    onDateEditStart={handleDateEditStart}
+                    handleInteractionChange={handleInteractionChange}
+                    handleInteractionAdd={handleInteractionAdd}
+                    handleInteractionRemove={handleInteractionRemove}
+                    handleDateEditStart={handleDateEditStart}
                     editingDateId={editingDateId}
-                    onDateChange={handleInteractionDateChange}
-                    onDateEditEnd={() => setEditingDateId(null)}
-                    handleFieldFocus={handleFieldFocus}
-                    handleInlineBlur={handleInlineBlur}
-                    showToast={showToast}
-                    originalValues={originalValues}
-                    setOriginalValues={setOriginalValues}
+                    handleInteractionDateChange={handleInteractionDateChange}
+                    setEditingDateId={setEditingDateId}
                 />
             </div>
         </div>

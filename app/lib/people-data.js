@@ -150,7 +150,9 @@ export const initialPeople = [
         workHours: "CST",
         role: "Manager",
         notes: "People lead",
-        interactions: ["Once a week"],
+        interactions: [
+            { text: "Once a week", date: "" }
+        ],
         dateMet: "4/22",
         connection: {
             source: "you",
@@ -167,11 +169,13 @@ export const initialPeople = [
         name: "Josh On",
         team: "",
         company: "Accenture",
-        location: "",
-        workHours: "",
-        role: "",
+        location: "San Francisco",
+        workHours: "PST",
+        role: "Designer/ Developer",
         notes: "",
-        interactions: [""],
+        interactions: [
+            { text: "", date: "" }
+        ],
         dateMet: "",
         connection: {
             source: "you",
@@ -182,5 +186,52 @@ export const initialPeople = [
             introducedByName: "",
             introducedByType: "direct"
         }
-    }
+    },
+    {
+        id: "chris-vo",
+        name: "Chris Vo",
+        team: "Groot",
+        company: "Comcast",
+        location: "Philadelphia",
+        workHours: "EST",
+        role: "Software Developer II",
+        notes: "Front-end developer. Previously on Team DaVinci for 2 weeks. From Vietnam (15 years ago). Bootcamp grad. Works in office 3-4 days/week. With Comcast for 4 years.",
+        interactions: [
+            { text: "Had a one on one call with him on 6/5/25 to go over intros", date: "2025-06-05" }
+        ],
+        dateMet: "",
+        connection: {
+            source: "you",
+            type: "",
+            strength: "",
+            notes: "",
+            introducedBy: null,
+            introducedByName: null,
+            introducedByType: "direct"
+        }
+    },
+    {
+        id: "denine-guy",
+        name: "Denine Guy",
+        team: "Davinci",
+        company: "Comcast",
+        location: "",
+        workHours: "",
+        role: "Front-end Developer",
+        notes: "10 years at Comcast. Started as front-end dev, moved to product dev, then back to front-end. Joined Davani group 2 years ago. Previously worked on Connected Living for 2 years. Working on Next Gen Pricing feature to lock in pricing plans for 1-5 years and simplify buy flow. Team works collaboratively across different features that impact same parts of the app.",
+        interactions: [
+            { text: "", date: "" }
+        ],
+        dateMet: "",
+        connection: {
+            source: "you",
+            type: "",
+            strength: "",
+            notes: "",
+            introducedBy: 'jonathon-connolly',
+            introducedByName: null,
+            introducedByType: "existing"
+        }
+    },
+
 ];
