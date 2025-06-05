@@ -1,6 +1,7 @@
 'use client'
 import { React, Fragment, useState } from "react";
 import { initialPeople } from "./lib/people-data";
+import PageHeader from "./components/PageHeader";
 
 export default function Home() {
   const [people, setPeople] = useState(initialPeople);
@@ -121,11 +122,12 @@ export default function Home() {
   };
 
   return (
-    <main className="p-8">
-      <header className="mb-6">
-        <h1 className="text-4xl font-bold">🌐 PeopleNet</h1>
-        <h2 className="text-lg text-gray-600">Connecting you and your organization.</h2>
-      </header>
+    <main className="">
+      <PageHeader
+        currentPage="table"
+        title="🌐 PeopleNet"
+        subtitle="Connecting you and your organization."
+      />
 
       <table className="w-full table-auto border border-black mb-4">
         <thead>
