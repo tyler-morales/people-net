@@ -304,6 +304,12 @@ export default function PersonTable({
     };
 
     const handleDeletePerson = (personToDelete) => {
+        // Prevent deleting user's own profile
+        if (personToDelete.isUserProfile) {
+            showToast('Cannot delete your own profile! Edit it through the graph view instead.', 'error');
+            return;
+        }
+
         // Save undo state before deletion
         saveUndoState('delete', personToDelete.id, null, personToDelete.name, people);
 
@@ -314,21 +320,34 @@ export default function PersonTable({
     const handleBatchDelete = () => {
         if (selectedCount === 0) return;
 
+        // Filter out user profile from batch deletion
+        const deletablePeople = selectedPeople.filter(person => !person.isUserProfile);
+        const userProfileSelected = selectedPeople.some(person => person.isUserProfile);
+
+        if (deletablePeople.length === 0) {
+            showToast('Cannot delete your own profile! Only other contacts can be deleted.', 'error');
+            return;
+        }
+
         // Save undo state for batch delete
-        const selectedPersonsData = selectedPeople.map(person => ({
+        const selectedPersonsData = deletablePeople.map(person => ({
             id: person.id,
             name: person.name,
             data: person
         }));
 
         // Save a batch undo state
-        saveUndoState('batchDelete', null, null, `${selectedCount} people`, people);
+        saveUndoState('batchDelete', null, null, `${deletablePeople.length} people`, people);
 
-        // Remove selected people
-        setPeople(prev => prev.filter(person => !isSelected(person.id)));
+        // Remove selected people (excluding user profile)
+        setPeople(prev => prev.filter(person => !deletablePeople.some(dp => dp.id === person.id)));
 
-        // Show toast and clear selection
-        showToast(`Deleted ${selectedCount} ${selectedCount === 1 ? 'person' : 'people'} from your network`, 'error');
+        // Show appropriate toast message
+        let message = `Deleted ${deletablePeople.length} ${deletablePeople.length === 1 ? 'person' : 'people'} from your network`;
+        if (userProfileSelected) {
+            message += ' (your profile was skipped)';
+        }
+        showToast(message, 'error');
         clearSelection();
     };
 

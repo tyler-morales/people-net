@@ -5,17 +5,29 @@ import { useToast } from "./hooks/useToast";
 import { useUndo } from "./hooks/useUndo";
 import TabNavigation from "./components/TabNavigation";
 import TableView from "./components/TableView";
-import GraphView from "./components/GraphView";
+import InteractiveGraphView from "./components/InteractiveGraphView";
 import GlobeView from "./components/GlobeView";
 import TimezoneChart from "./components/TimezoneChart";
 import QuickNote from "./components/QuickNote";
 import Toast from "./components/Toast";
 import ApiUsageMonitor from "./components/ui/ApiUsageMonitor";
+import UserProfileModal from "./components/UserProfileModal";
 
 export default function Home() {
   const [people, setPeople] = useState([]);
   const [activeTab, setActiveTab] = useState('table');
   const [isLoaded, setIsLoaded] = useState(false);
+  const [userProfile, setUserProfile] = useState({
+    name: 'You',
+    role: '',
+    company: '',
+    team: '',
+    location: '',
+    workHours: '',
+    notes: '',
+    color: '#3b82f6'
+  });
+  const [showUserProfileModal, setShowUserProfileModal] = useState(false);
 
   // API Monitor easter egg state
   const [forceShowApiMonitor, setForceShowApiMonitor] = useState(false);
@@ -56,14 +68,38 @@ export default function Home() {
   useEffect(() => {
     try {
       const savedPeople = localStorage.getItem('peopleNet');
+      const savedUserProfile = localStorage.getItem('peopleNetUserProfile');
+
       if (savedPeople) {
         const parsedPeople = JSON.parse(savedPeople);
         setPeople(parsedPeople);
+
+        // Check if there's an existing "You" entry and sync with user profile
+        const existingYouEntry = parsedPeople.find(person => person.isUserProfile || person.id === 'you-profile');
+        if (existingYouEntry && !savedUserProfile) {
+          // Sync the user profile from the people data entry
+          setUserProfile({
+            name: existingYouEntry.name || 'You',
+            role: existingYouEntry.role || '',
+            company: existingYouEntry.company || '',
+            team: existingYouEntry.team || '',
+            location: existingYouEntry.location || '',
+            workHours: existingYouEntry.workHours || '',
+            notes: existingYouEntry.notes || '',
+            color: '#3b82f6'
+          });
+        }
+
         showToast(`Loaded ${parsedPeople.length} contacts from storage`, 'info');
       } else {
         // No saved data, use initial data
         setPeople(initialPeople);
         showToast('Welcome to PeopleNet! Add your first contact to get started.', 'info');
+      }
+
+      if (savedUserProfile) {
+        const parsedUserProfile = JSON.parse(savedUserProfile);
+        setUserProfile(parsedUserProfile);
       }
     } catch (error) {
       console.error('Error loading from localStorage:', error);
@@ -86,6 +122,19 @@ export default function Home() {
       }
     }
   }, [people, isLoaded]);
+
+  // Save user profile to localStorage whenever it changes
+  useEffect(() => {
+    if (isLoaded) {
+      try {
+        localStorage.setItem('peopleNetUserProfile', JSON.stringify(userProfile));
+        console.log('User profile saved to localStorage');
+      } catch (error) {
+        console.error('Error saving user profile to localStorage:', error);
+        showToast('Error saving user profile', 'error');
+      }
+    }
+  }, [userProfile, isLoaded]);
 
   // Track original value when field gains focus
   const handleFieldFocus = (personId, fieldName, currentValue) => {
@@ -130,6 +179,60 @@ export default function Home() {
       default:
         return 'Your professional network hub';
     }
+  };
+
+  // Handle user profile save
+  const handleUserProfileSave = (newProfile) => {
+    setUserProfile(newProfile);
+
+    // Create or update "You" entry in people data for table view
+    const youId = 'you-profile';
+    const youEntry = {
+      id: youId,
+      name: newProfile.name,
+      company: newProfile.company || '',
+      team: newProfile.team || '',
+      role: newProfile.role || '',
+      location: newProfile.location || '',
+      workHours: newProfile.workHours || '',
+      notes: newProfile.notes || '',
+      dateMet: new Date().toISOString().split('T')[0],
+      connection: {
+        source: 'you',
+        type: 'self',
+        strength: 'core',
+        notes: 'This is you!',
+        introducedBy: null,
+        introducedByName: '',
+        introducedByType: 'direct'
+      },
+      interactions: [
+        { text: 'Your own profile entry', date: new Date().toISOString().split('T')[0] }
+      ],
+      isUserProfile: true // Special flag to identify this as the user's own entry
+    };
+
+    setPeople(prev => {
+      // Check if "You" entry already exists
+      const existingYouIndex = prev.findIndex(person => person.id === youId || person.isUserProfile);
+
+      if (existingYouIndex !== -1) {
+        // Update existing entry
+        const updated = [...prev];
+        updated[existingYouIndex] = { ...updated[existingYouIndex], ...youEntry };
+        return updated;
+      } else {
+        // Add new entry at the beginning
+        return [youEntry, ...prev];
+      }
+    });
+
+    showToast(`Profile updated! Welcome, ${newProfile.name}`, 'success');
+  };
+
+  // Handle opening user profile modal
+  const handleEditUserProfile = () => {
+    setShowUserProfileModal(true);
   };
 
   // Show loading state until data is loaded
@@ -180,7 +283,11 @@ export default function Home() {
           setOriginalValues={setOriginalValues}
         />
       ) : activeTab === 'graph' ? (
-        <GraphView people={people} />
+        <InteractiveGraphView
+          people={people}
+          userProfile={userProfile}
+          onEditUserProfile={handleEditUserProfile}
+        />
       ) : activeTab === 'globe' ? (
         <GlobeView people={people} />
       ) : activeTab === 'timezone' ? (
@@ -200,6 +307,16 @@ export default function Home() {
 
       {/* API Usage Monitor */}
       <ApiUsageMonitor ref={apiMonitorRef} forceVisible={forceShowApiMonitor} />
+
+      {/* User Profile Modal */}
+      {showUserProfileModal && (
+        <UserProfileModal
+          userProfile={userProfile}
+          people={people}
+          onSave={handleUserProfileSave}
+          onClose={() => setShowUserProfileModal(false)}
+        />
+      )}
     </main>
   );
 }

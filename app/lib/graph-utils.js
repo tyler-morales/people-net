@@ -76,31 +76,84 @@ export function buildFullConnectionPath(targetPerson, people) {
     return tracePath(targetPerson);
 }
 
-export function calculateGraphLayout(people, width, height) {
-    const calculatedNodes = [
-        { id: 'you', name: 'You', x: width / 2, y: height / 2, radius: 30, color: '#3b82f6' },
-        ...people.map((person, index) => {
-            const angle = (index * 2 * Math.PI) / people.length;
-            const radius = 200;
+export function calculateGraphLayout(people, width, height, groupBy = 'none') {
+    let calculatedNodes = [];
+    const baseRadius = 200;
+
+    // Standard 'You' node
+    const youNode = { id: 'you', name: 'You', x: width / 2, y: height / 2, radius: 30, color: '#3b82f6', isGroup: false };
+
+    if (groupBy === 'none') {
+        calculatedNodes = [
+            youNode,
+            ...people.map((person, index) => {
+                const angle = (index * 2 * Math.PI) / people.length;
+                return {
+                    id: person.id,
+                    name: person.name,
+                    company: person.company,
+                    role: person.role,
+                    team: person.team,
+                    strength: person.connection?.strength,
+                    connection: person.connection,
+                    x: Math.round((width / 2 + Math.cos(angle) * baseRadius) * 100) / 100,
+                    y: Math.round((height / 2 + Math.sin(angle) * baseRadius) * 100) / 100,
+                    radius: getNodeRadius(person.connection?.strength),
+                    color: getNodeColor(person.connection?.strength),
+                    isGroup: false
+                };
+            })
+        ];
+    } else {
+        // Get unique values for the groupBy attribute
+        const groupKeys = [...new Set(people.map(p => p[groupBy]).filter(Boolean))];
+
+        // Create group nodes positioned around "You"
+        const groupNodes = groupKeys.map((key, index) => {
+            const angle = (index * 2 * Math.PI) / groupKeys.length;
+            return {
+                id: `group-${key}`,
+                name: key,
+                isGroup: true,
+                x: Math.round((width / 2 + Math.cos(angle) * baseRadius) * 100) / 100,
+                y: Math.round((height / 2 + Math.sin(angle) * baseRadius) * 100) / 100,
+                radius: 25,
+                color: '#a8a29e' // Stone color for group nodes
+            };
+        });
+
+        // Create person nodes positioned around their respective group nodes
+        const personNodes = people.map(person => {
+            const groupKey = person[groupBy];
+            const groupNode = groupNodes.find(n => n.name === groupKey);
+
+            // Position people around their group node
+            const angle = Math.random() * 2 * Math.PI;
+            const personRadius = 80;
+
             return {
                 id: person.id,
                 name: person.name,
                 company: person.company,
                 role: person.role,
+                team: person.team,
                 strength: person.connection?.strength,
                 connection: person.connection,
-                x: Math.round((width / 2 + Math.cos(angle) * radius) * 100) / 100,
-                y: Math.round((height / 2 + Math.sin(angle) * radius) * 100) / 100,
+                x: groupNode ? Math.round((groupNode.x + Math.cos(angle) * personRadius) * 100) / 100 : Math.random() * width,
+                y: groupNode ? Math.round((groupNode.y + Math.sin(angle) * personRadius) * 100) / 100 : Math.random() * height,
                 radius: getNodeRadius(person.connection?.strength),
-                color: getNodeColor(person.connection?.strength)
+                color: getNodeColor(person.connection?.strength),
+                isGroup: false
             };
-        })
-    ];
+        });
+
+        calculatedNodes = [youNode, ...groupNodes, ...personNodes];
+    }
 
     return calculatedNodes;
 }
 
-export function calculateGraphLinks(people, graphFilter) {
+export function calculateGraphLinks(people, graphFilter, groupBy = 'none') {
     let calculatedLinks = [];
 
     if (graphFilter === 'all' || graphFilter === 'direct') {
@@ -162,6 +215,20 @@ export function calculateGraphLinks(people, graphFilter) {
                 strokeStyle: 'solid'
             }));
         calculatedLinks = [...calculatedLinks, ...externalLinks];
+    }
+
+    // Add links for grouping
+    if (groupBy !== 'none') {
+        const groupLinks = people
+            .filter(person => person[groupBy])
+            .map(person => ({
+                source: person.id,
+                target: `group-${person[groupBy]}`,
+                strokeWidth: 1,
+                strokeStyle: 'dashed',
+                type: 'group'
+            }));
+        calculatedLinks = [...calculatedLinks, ...groupLinks];
     }
 
     return calculatedLinks;

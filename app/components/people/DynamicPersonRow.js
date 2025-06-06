@@ -173,12 +173,18 @@ export default function DynamicPersonRow({
                         >
                             {selectedPersonId === person.id ? 'Close' : 'View'}
                         </button>
-                        <button
-                            className="text-red-600 cursor-pointer hover:text-red-800 text-sm"
-                            onClick={() => handleDeletePerson(person)}
-                        >
-                            Delete
-                        </button>
+                        {person.isUserProfile ? (
+                            <span className="text-blue-600 text-sm italic">
+                                You
+                            </span>
+                        ) : (
+                            <button
+                                className="text-red-600 cursor-pointer hover:text-red-800 text-sm"
+                                onClick={() => handleDeletePerson(person)}
+                            >
+                                Delete
+                            </button>
+                        )}
                     </div>
                 );
 
@@ -189,18 +195,25 @@ export default function DynamicPersonRow({
 
     return (
         <Fragment>
-            <tr className={`border-t ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
+            <tr className={`border-t ${person.isUserProfile
+                    ? 'bg-blue-50 border-blue-200'
+                    : index % 2 === 0 ? 'bg-white' : 'bg-gray-100'
+                }`}>
                 {columnOrder.map((column) => (
                     <td
                         key={column.id}
-                        className={`p-2 border-b ${column.width}`}
+                        className={`p-2 border-b ${column.width} ${person.isUserProfile ? 'border-blue-200' : ''
+                            }`}
                     >
                         {renderCellContent(column)}
                     </td>
                 ))}
             </tr>
             {selectedPersonId === person.id && (
-                <tr className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                <tr className={`${person.isUserProfile
+                        ? 'bg-blue-50'
+                        : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                    }`}>
                     <td colSpan={columnOrder.length} className="p-4">
                         <PersonDetails
                             person={person}

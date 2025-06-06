@@ -11,6 +11,7 @@ export default function GraphView({ people }) {
     const [graphFilter, setGraphFilter] = useState('all');
     const [strengthFilter, setStrengthFilter] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [groupBy, setGroupBy] = useState('none');
 
     // Graph dimensions
     const width = 800;
@@ -20,12 +21,12 @@ export default function GraphView({ people }) {
 
     // Calculate graph layout and links
     useEffect(() => {
-        const calculatedNodes = calculateGraphLayout(people, isExpanded ? expandedWidth : width, isExpanded ? expandedHeight : height);
-        const calculatedLinks = calculateGraphLinks(people, graphFilter);
+        const calculatedNodes = calculateGraphLayout(people, isExpanded ? expandedWidth : width, isExpanded ? expandedHeight : height, groupBy);
+        const calculatedLinks = calculateGraphLinks(people, graphFilter, groupBy);
 
         setNodes(calculatedNodes);
         setLinks(calculatedLinks);
-    }, [people, width, height, graphFilter, isExpanded, expandedWidth, expandedHeight]);
+    }, [people, width, height, graphFilter, isExpanded, expandedWidth, expandedHeight, groupBy]);
 
     // Handle escape key
     useEffect(() => {
@@ -96,6 +97,22 @@ export default function GraphView({ people }) {
                                 <option value="direct">Direct Only</option>
                                 <option value="introduced">Through Others</option>
                                 <option value="external">External Introductions</option>
+                            </select>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            <label className="text-sm font-medium text-gray-700">
+                                Group By:
+                            </label>
+                            <select
+                                value={groupBy}
+                                onChange={(e) => setGroupBy(e.target.value)}
+                                className="border border-gray-300 rounded px-3 py-1 text-sm"
+                            >
+                                <option value="none">None</option>
+                                <option value="team">Team</option>
+                                <option value="company">Company</option>
+                                <option value="role">Role</option>
                             </select>
                         </div>
 
@@ -524,6 +541,23 @@ export default function GraphView({ people }) {
                                     <option value="direct" className="text-gray-900">Direct Only</option>
                                     <option value="introduced" className="text-gray-900">Through Others</option>
                                     <option value="external" className="text-gray-900">External Introductions</option>
+                                </select>
+                            </div>
+
+                            {/* Group By */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-white/90">
+                                    Group By:
+                                </label>
+                                <select
+                                    value={groupBy}
+                                    onChange={(e) => setGroupBy(e.target.value)}
+                                    className="bg-white/20 backdrop-blur-sm border border-white/30 rounded px-3 py-1 text-sm text-white"
+                                >
+                                    <option value="none">None</option>
+                                    <option value="team">Team</option>
+                                    <option value="company">Company</option>
+                                    <option value="role">Role</option>
                                 </select>
                             </div>
 
