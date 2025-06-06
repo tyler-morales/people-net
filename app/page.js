@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { initialPeople } from "./lib/people-data";
 import { useToast } from "./hooks/useToast";
 import { useUndo } from "./hooks/useUndo";
@@ -7,13 +7,19 @@ import TabNavigation from "./components/TabNavigation";
 import TableView from "./components/TableView";
 import GraphView from "./components/GraphView";
 import GlobeView from "./components/GlobeView";
+import TimezoneChart from "./components/TimezoneChart";
 import QuickNote from "./components/QuickNote";
 import Toast from "./components/Toast";
+import ApiUsageMonitor from "./components/ui/ApiUsageMonitor";
 
 export default function Home() {
   const [people, setPeople] = useState([]);
   const [activeTab, setActiveTab] = useState('table');
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // API Monitor easter egg state
+  const [forceShowApiMonitor, setForceShowApiMonitor] = useState(false);
+  const apiMonitorRef = useRef(null);
 
   // Custom hooks
   const { toast, showToast, hideToast } = useToast();
@@ -21,6 +27,30 @@ export default function Home() {
 
   // Track original values for change detection
   const [originalValues, setOriginalValues] = useState({});
+
+  // Keyboard shortcut easter egg: Ctrl+Shift+A to toggle API monitor
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'A') {
+        event.preventDefault();
+        setForceShowApiMonitor(prev => {
+          const newState = !prev;
+          if (newState) {
+            console.log('%c🎉 Developer Easter Egg Activated!', 'color: #ff6b35; font-size: 16px; font-weight: bold;');
+            console.log('%c🔓 Hidden API Monitor unlocked with Ctrl+Shift+A', 'color: #4CAF50; font-weight: bold;');
+            showToast('🔓 Developer secret unlocked!', 'info');
+          } else {
+            console.log('%c🔒 Hidden API Monitor concealed', 'color: #666; font-weight: bold;');
+            showToast('🔒 Developer mode hidden', 'info');
+          }
+          return newState;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showToast]);
 
   // Load data from localStorage on initial mount
   useEffect(() => {
@@ -87,18 +117,20 @@ export default function Home() {
     return () => window.removeEventListener('undo-requested', handleUndoRequest);
   }, [handleUndo]);
 
-  function getTabSubtitle() {
+  const getTabSubtitle = () => {
     switch (activeTab) {
       case 'table':
-        return 'Manage your professional network in a table format.';
+        return 'Manage and track your professional connections';
       case 'graph':
-        return 'Visual network of your professional relationships.';
+        return 'Visualize your network relationships';
       case 'globe':
-        return 'Geographic visualization of your global network.';
+        return 'Explore your global connections';
+      case 'timezone':
+        return 'See when your team is available across timezones';
       default:
-        return 'Manage your professional network.';
+        return 'Your professional network hub';
     }
-  }
+  };
 
   // Show loading state until data is loaded
   if (!isLoaded) {
@@ -149,9 +181,11 @@ export default function Home() {
         />
       ) : activeTab === 'graph' ? (
         <GraphView people={people} />
-      ) : (
+      ) : activeTab === 'globe' ? (
         <GlobeView people={people} />
-      )}
+      ) : activeTab === 'timezone' ? (
+        <TimezoneChart people={people} />
+      ) : null}
 
       {/* Floating Quick Note Button */}
       <QuickNote
@@ -163,6 +197,9 @@ export default function Home() {
 
       {/* Toast Notification */}
       <Toast toast={toast} onClose={hideToast} />
+
+      {/* API Usage Monitor */}
+      <ApiUsageMonitor ref={apiMonitorRef} forceVisible={forceShowApiMonitor} />
     </main>
   );
 }

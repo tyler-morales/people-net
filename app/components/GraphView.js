@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react';
-import { calculateGraphLayout, calculateGraphLinks } from '../lib/graph-utils';
+import { calculateGraphLayout, calculateGraphLinks, buildFullConnectionPath } from '../lib/graph-utils';
 import { strengthToNumber, numberToStrength, getStrengthLabel } from '../lib/connection-utils';
 
 export default function GraphView({ people }) {
@@ -38,6 +38,38 @@ export default function GraphView({ people }) {
         document.addEventListener('keydown', handleEscape);
         return () => document.removeEventListener('keydown', handleEscape);
     }, [isExpanded]);
+
+    // Calculate which nodes are part of the selected node's connection path
+    const getPathNodeIds = () => {
+        if (!selectedNode || selectedNode.id === 'you') {
+            return new Set();
+        }
+
+        const fullPerson = people.find(p => p.id === selectedNode.id);
+        if (!fullPerson) {
+            return new Set(['you', selectedNode.id]);
+        }
+
+        const connectionPath = buildFullConnectionPath(fullPerson, people);
+        const pathNodeIds = new Set(['you']); // Always include 'you'
+
+        // Add all people in the connection path
+        connectionPath.forEach(personName => {
+            if (personName === 'You') {
+                pathNodeIds.add('you');
+            } else {
+                // Find the person by name and add their ID
+                const person = people.find(p => p.name === personName);
+                if (person) {
+                    pathNodeIds.add(person.id);
+                }
+            }
+        });
+
+        return pathNodeIds;
+    };
+
+    const pathNodeIds = getPathNodeIds();
 
     function handleNodeClick(node) {
         setSelectedNode(selectedNode?.id === node.id ? null : node);
@@ -130,6 +162,21 @@ export default function GraphView({ people }) {
                                 opacity = targetStrengthNum === strengthFilter ? 0.8 : 0.1;
                             }
 
+                            // Apply connection path highlighting for links
+                            if (selectedNode && selectedNode.id !== 'you') {
+                                const isSourceInPath = pathNodeIds.has(link.source);
+                                const isTargetInPath = pathNodeIds.has(link.target);
+
+                                if (isSourceInPath && isTargetInPath) {
+                                    // Both nodes are in the path - highlight the link
+                                    opacity = Math.max(opacity, 0.9);
+                                    stroke = "#3b82f6"; // Blue color for path links
+                                } else {
+                                    // Link is not part of the connection path - reduce opacity
+                                    opacity = Math.min(opacity, 0.1);
+                                }
+                            }
+
                             if (link.strokeStyle === 'dashed') {
                                 strokeDasharray = "8,4";
                             } else if (link.strokeStyle === 'dotted') {
@@ -159,6 +206,17 @@ export default function GraphView({ people }) {
                             if (strengthFilter > 0 && node.id !== 'you') {
                                 const nodeStrengthNum = strengthToNumber(node.strength);
                                 nodeOpacity = nodeStrengthNum === strengthFilter ? 1 : 0.2;
+                            }
+
+                            // Apply connection path highlighting
+                            if (selectedNode && selectedNode.id !== 'you') {
+                                if (pathNodeIds.has(node.id)) {
+                                    // Node is part of the connection path - keep full opacity
+                                    nodeOpacity = Math.max(nodeOpacity, 1);
+                                } else {
+                                    // Node is not part of the connection path - reduce opacity
+                                    nodeOpacity = Math.min(nodeOpacity, 0.2);
+                                }
                             }
 
                             return (
@@ -252,46 +310,50 @@ export default function GraphView({ people }) {
                                 <div className="pt-2 border-t border-gray-200">
                                     <div className="font-medium text-gray-800 mb-1">Connection Path:</div>
                                     <div className="text-xs bg-blue-50 p-2 rounded border-l-2 border-blue-200">
-                                        {selectedNode.connection?.introducedByType === 'direct' && (
-                                            <div className="flex items-center gap-1">
-                                                <span className="font-medium text-blue-800">You</span>
-                                                <span className="text-blue-600">→</span>
-                                                <span className="font-medium text-blue-800">{selectedNode.name}</span>
-                                                <span className="text-gray-500 ml-2">(Direct connection)</span>
-                                            </div>
-                                        )}
-                                        {selectedNode.connection?.introducedByType === 'existing' && selectedNode.connection?.introducedBy && (
-                                            <div className="flex items-center gap-1 flex-wrap">
-                                                <span className="font-medium text-blue-800">You</span>
-                                                <span className="text-blue-600">→</span>
-                                                <span className="font-medium text-blue-800">
-                                                    {people.find(p => p.id === selectedNode.connection.introducedBy)?.name || 'Unknown'}
-                                                </span>
-                                                <span className="text-blue-600">→</span>
-                                                <span className="font-medium text-blue-800">{selectedNode.name}</span>
-                                                <span className="text-gray-500 ml-2">(Through network)</span>
-                                            </div>
-                                        )}
-                                        {selectedNode.connection?.introducedByType === 'external' && selectedNode.connection?.introducedByName && (
-                                            <div className="flex items-center gap-1 flex-wrap">
-                                                <span className="font-medium text-blue-800">You</span>
-                                                <span className="text-blue-600">→</span>
-                                                <span className="font-medium text-orange-600">
-                                                    {selectedNode.connection.introducedByName}
-                                                </span>
-                                                <span className="text-blue-600">→</span>
-                                                <span className="font-medium text-blue-800">{selectedNode.name}</span>
-                                                <span className="text-gray-500 ml-2">(External intro)</span>
-                                            </div>
-                                        )}
-                                        {!selectedNode.connection?.introducedByType && (
-                                            <div className="flex items-center gap-1">
-                                                <span className="font-medium text-blue-800">You</span>
-                                                <span className="text-blue-600">→</span>
-                                                <span className="font-medium text-blue-800">{selectedNode.name}</span>
-                                                <span className="text-gray-500 ml-2">(Direct connection)</span>
-                                            </div>
-                                        )}
+                                        {(() => {
+                                            // Find the full person object from the people array
+                                            const fullPerson = people.find(p => p.id === selectedNode.id);
+                                            if (!fullPerson) {
+                                                return (
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="font-medium text-blue-800">You</span>
+                                                        <span className="text-blue-600">→</span>
+                                                        <span className="font-medium text-blue-800">{selectedNode.name}</span>
+                                                        <span className="text-gray-500 ml-2">(Direct connection)</span>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Build the full connection path
+                                            const connectionPath = buildFullConnectionPath(fullPerson, people);
+
+                                            // Determine connection type for label
+                                            let connectionLabel = '(Direct connection)';
+                                            if (fullPerson.connection?.introducedByType === 'existing') {
+                                                connectionLabel = connectionPath.length > 2 ? '(Through network)' : '(Through network)';
+                                            } else if (fullPerson.connection?.introducedByType === 'external') {
+                                                connectionLabel = '(External intro)';
+                                            }
+
+                                            return (
+                                                <div className="flex items-center gap-1 flex-wrap">
+                                                    {connectionPath.map((person, index) => (
+                                                        <div key={index} className="flex items-center gap-1">
+                                                            <span className={`font-medium ${person === 'You' ? 'text-blue-800' :
+                                                                fullPerson.connection?.introducedByType === 'external' && index === connectionPath.length - 2 ? 'text-orange-600' :
+                                                                    'text-blue-800'
+                                                                }`}>
+                                                                {person}
+                                                            </span>
+                                                            {index < connectionPath.length - 1 && (
+                                                                <span className="text-blue-600">→</span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                    <span className="text-gray-500 ml-2">{connectionLabel}</span>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </div>
@@ -349,6 +411,21 @@ export default function GraphView({ people }) {
                                     opacity = targetStrengthNum === strengthFilter ? 0.9 : 0.1;
                                 }
 
+                                // Apply connection path highlighting for links
+                                if (selectedNode && selectedNode.id !== 'you') {
+                                    const isSourceInPath = pathNodeIds.has(link.source);
+                                    const isTargetInPath = pathNodeIds.has(link.target);
+
+                                    if (isSourceInPath && isTargetInPath) {
+                                        // Both nodes are in the path - highlight the link
+                                        opacity = Math.max(opacity, 0.9);
+                                        stroke = "#3b82f6"; // Blue color for path links
+                                    } else {
+                                        // Link is not part of the connection path - reduce opacity
+                                        opacity = Math.min(opacity, 0.1);
+                                    }
+                                }
+
                                 if (link.strokeStyle === 'dashed') {
                                     strokeDasharray = "8,4";
                                 } else if (link.strokeStyle === 'dotted') {
@@ -378,6 +455,17 @@ export default function GraphView({ people }) {
                                 if (strengthFilter > 0 && node.id !== 'you') {
                                     const nodeStrengthNum = strengthToNumber(node.strength);
                                     nodeOpacity = nodeStrengthNum === strengthFilter ? 1 : 0.3;
+                                }
+
+                                // Apply connection path highlighting
+                                if (selectedNode && selectedNode.id !== 'you') {
+                                    if (pathNodeIds.has(node.id)) {
+                                        // Node is part of the connection path - keep full opacity
+                                        nodeOpacity = Math.max(nodeOpacity, 1);
+                                    } else {
+                                        // Node is not part of the connection path - reduce opacity
+                                        nodeOpacity = Math.min(nodeOpacity, 0.3);
+                                    }
                                 }
 
                                 return (
@@ -526,46 +614,50 @@ export default function GraphView({ people }) {
                                 <div className="pt-2 border-t border-white/20">
                                     <div className="font-medium text-white/90 mb-1">Connection Path:</div>
                                     <div className="text-xs bg-blue-500/20 backdrop-blur-sm p-2 rounded border-l-2 border-blue-400">
-                                        {selectedNode.connection?.introducedByType === 'direct' && (
-                                            <div className="flex items-center gap-1">
-                                                <span className="font-medium text-blue-300">You</span>
-                                                <span className="text-blue-400">→</span>
-                                                <span className="font-medium text-blue-300">{selectedNode.name}</span>
-                                                <span className="text-white/60 ml-2">(Direct)</span>
-                                            </div>
-                                        )}
-                                        {selectedNode.connection?.introducedByType === 'existing' && selectedNode.connection?.introducedBy && (
-                                            <div className="flex items-center gap-1 flex-wrap">
-                                                <span className="font-medium text-blue-300">You</span>
-                                                <span className="text-blue-400">→</span>
-                                                <span className="font-medium text-blue-300">
-                                                    {people.find(p => p.id === selectedNode.connection.introducedBy)?.name || 'Unknown'}
-                                                </span>
-                                                <span className="text-blue-400">→</span>
-                                                <span className="font-medium text-blue-300">{selectedNode.name}</span>
-                                                <span className="text-white/60 ml-2">(Network)</span>
-                                            </div>
-                                        )}
-                                        {selectedNode.connection?.introducedByType === 'external' && selectedNode.connection?.introducedByName && (
-                                            <div className="flex items-center gap-1 flex-wrap">
-                                                <span className="font-medium text-blue-300">You</span>
-                                                <span className="text-blue-400">→</span>
-                                                <span className="font-medium text-orange-300">
-                                                    {selectedNode.connection.introducedByName}
-                                                </span>
-                                                <span className="text-blue-400">→</span>
-                                                <span className="font-medium text-blue-300">{selectedNode.name}</span>
-                                                <span className="text-white/60 ml-2">(External)</span>
-                                            </div>
-                                        )}
-                                        {!selectedNode.connection?.introducedByType && (
-                                            <div className="flex items-center gap-1">
-                                                <span className="font-medium text-blue-300">You</span>
-                                                <span className="text-blue-400">→</span>
-                                                <span className="font-medium text-blue-300">{selectedNode.name}</span>
-                                                <span className="text-white/60 ml-2">(Direct)</span>
-                                            </div>
-                                        )}
+                                        {(() => {
+                                            // Find the full person object from the people array
+                                            const fullPerson = people.find(p => p.id === selectedNode.id);
+                                            if (!fullPerson) {
+                                                return (
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="font-medium text-blue-300">You</span>
+                                                        <span className="text-blue-400">→</span>
+                                                        <span className="font-medium text-blue-300">{selectedNode.name}</span>
+                                                        <span className="text-white/60 ml-2">(Direct)</span>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Build the full connection path
+                                            const connectionPath = buildFullConnectionPath(fullPerson, people);
+
+                                            // Determine connection type for label
+                                            let connectionLabel = '(Direct connection)';
+                                            if (fullPerson.connection?.introducedByType === 'existing') {
+                                                connectionLabel = connectionPath.length > 2 ? '(Through network)' : '(Through network)';
+                                            } else if (fullPerson.connection?.introducedByType === 'external') {
+                                                connectionLabel = '(External intro)';
+                                            }
+
+                                            return (
+                                                <div className="flex items-center gap-1 flex-wrap">
+                                                    {connectionPath.map((person, index) => (
+                                                        <div key={index} className="flex items-center gap-1">
+                                                            <span className={`font-medium ${person === 'You' ? 'text-blue-300' :
+                                                                fullPerson.connection?.introducedByType === 'external' && index === connectionPath.length - 2 ? 'text-orange-300' :
+                                                                    'text-blue-300'
+                                                                }`}>
+                                                                {person}
+                                                            </span>
+                                                            {index < connectionPath.length - 1 && (
+                                                                <span className="text-blue-400">→</span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                    <span className="text-white/60 ml-2">{connectionLabel}</span>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
 

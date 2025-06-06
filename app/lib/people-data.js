@@ -1,11 +1,13 @@
+import { getTimezoneFromLocation } from '../utils/timezone-utils';
+
 export const initialPeople = [
     {
         id: "niranjan",
         name: "Niranjan",
         team: "",
         company: "Accenture",
-        location: "Philly",
-        workHours: "9:30 PM – 6:30 AM",
+        location: "Philadelphia, PA, USA",
+        workHours: "EST",
         role: "Hiring Manager / Client Account",
         notes: "Very knowledgeable of codebase",
         interactions: [
@@ -27,8 +29,8 @@ export const initialPeople = [
         name: "Saswat Das",
         team: "",
         company: "Accenture",
-        location: "",
-        workHours: "9:30 PM – 6:30 AM",
+        location: "Bangalore, India",
+        workHours: "IST",
         role: "Developer",
         notes: "Very knowledgeable of codebase",
         interactions: [
@@ -50,8 +52,8 @@ export const initialPeople = [
         name: "Tom Limongello",
         team: "",
         company: "Comcast",
-        location: "",
-        workHours: "",
+        location: "Denver, CO, USA",
+        workHours: "MST",
         role: "Eng 1, Eng Ops, Tech & Product, Global Tech Org",
         notes: "Handles laptop deployments",
         interactions: [
@@ -74,7 +76,7 @@ export const initialPeople = [
         team: "",
         company: "Accenture (Davinci)",
         location: "Pune, India",
-        workHours: "11:00 AM – 9:30/10 PM",
+        workHours: "IST",
         role: "React Front-End Developer",
         notes: "First Davinci team member; Windows laptop",
         interactions: [
@@ -96,8 +98,8 @@ export const initialPeople = [
         name: "Jonathon Connolly",
         team: "Buy Flow",
         company: "Comcast",
-        location: "Philly",
-        workHours: "10:00 AM – 6:00 PM EST",
+        location: "Philadelphia, PA, USA",
+        workHours: "EST",
         role: "Manager, Buy Flow Department",
         notes: "Manages the purchase flow with 5 package types (User, Agent for internal Comcast employees). Leads 4 dev teams (~10 devs each) with 11 direct Xfinity reports. Hosts biweekly team syncs to align the buy flow team. Acts as a point of contact for access requests and team follow-ups. Background: 6 years at Comcast, started on Xfinity Mobile, previously at Barclays Bank as a front-end dev.",
         interactions: [
@@ -121,8 +123,8 @@ export const initialPeople = [
         name: "Jenine Guy",
         team: "Buy Flow",
         company: "Comcast",
-        location: "Philly",
-        workHours: "10:00 AM – 6:00 PM EST",
+        location: "Philadelphia, PA, USA",
+        workHours: "EST",
         role: "Lead Develoepr",
         notes: "",
         interactions: [
@@ -146,11 +148,13 @@ export const initialPeople = [
         name: "Ted Huff",
         team: "",
         company: "Accenture",
-        location: "Chicago",
+        location: "Chicago, IL, USA",
         workHours: "CST",
         role: "Manager",
         notes: "People lead",
-        interactions: ["Once a week"],
+        interactions: [
+            { text: "Once a week", date: "" }
+        ],
         dateMet: "4/22",
         connection: {
             source: "you",
@@ -167,19 +171,66 @@ export const initialPeople = [
         name: "Josh On",
         team: "",
         company: "Accenture",
-        location: "",
-        workHours: "",
+        location: "New York, NY, USA",
+        workHours: "EST",
         role: "",
         notes: "",
-        interactions: [""],
+        interactions: [
+            { text: "", date: "" }
+        ],
         dateMet: "",
         connection: {
             source: "you",
             type: "inspired_me",
             strength: "core",
             notes: "",
-            introducedBy: "",
             introducedByName: "",
+            introducedByType: "direct"
+        }
+    },
+    {
+        id: "chris-vo",
+        name: "Chris Vo",
+        team: "Groot",
+        company: "Comcast",
+        location: "Philadelphia, PA, USA",
+        workHours: "EST",
+        role: "Software Developer II",
+        notes: "Front-end developer. Previously on Team DaVinci for 2 weeks. From Vietnam (15 years ago). Bootcamp grad. Works in office 3-4 days/week. With Comcast for 4 years.",
+        interactions: [
+            { text: "Had a one on one call with him on 6/5/25 to go over intros", date: "2025-06-05" }
+        ],
+        dateMet: "",
+        connection: {
+            source: "you",
+            type: "",
+            strength: "",
+            notes: "",
+            introducedBy: null,
+            introducedByName: null,
+            introducedByType: "direct"
+        }
+    },
+    {
+        id: "denine-guy",
+        name: "Denine Guy",
+        team: "Davinci",
+        company: "Comcast",
+        location: "Philadelphia, PA, USA",
+        workHours: "EST",
+        role: "Front-end Developer",
+        notes: "10 years at Comcast. Started as front-end dev, moved to product dev, then back to front-end. Joined Davani group 2 years ago. Previously worked on Connected Living for 2 years. Working on Next Gen Pricing feature to lock in pricing plans for 1-5 years and simplify buy flow. Team works collaboratively across different features that impact same parts of the app.",
+        interactions: [
+            { text: "", date: "" }
+        ],
+        dateMet: "",
+        connection: {
+            source: "you",
+            type: "",
+            strength: "",
+            notes: "",
+            introducedBy: null,
+            introducedByName: null,
             introducedByType: "direct"
         }
     }

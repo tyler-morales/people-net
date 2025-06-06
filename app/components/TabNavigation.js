@@ -30,6 +30,15 @@ export default function TabNavigation({ activeTab, setActiveTab, canUndo }) {
             >
                 🌍 Globe
             </button>
+            <button
+                onClick={() => setActiveTab('timezone')}
+                className={`pb-2 px-1 border-b-2 transition-colors ${activeTab === 'timezone'
+                    ? 'border-blue-500 text-blue-600 font-semibold'
+                    : 'border-transparent text-gray-600 hover:text-gray-800'
+                    }`}
+            >
+                🕐 Timezone
+            </button>
 
             {/* Undo indicator */}
             {canUndo && (
