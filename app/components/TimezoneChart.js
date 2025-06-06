@@ -41,7 +41,7 @@ export default function TimezoneChart({ people }) {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [hoverPosition, setHoverPosition] = useState(null);
     const [isHovering, setIsHovering] = useState(false);
-    const userTimezone = 'CST'; // User's timezone - you can make this configurable
+    const [selectedTimezone, setSelectedTimezone] = useState('CST'); // Selected timezone becomes the center reference
 
     // Update current time every minute
     useEffect(() => {
@@ -73,12 +73,12 @@ export default function TimezoneChart({ people }) {
             }
         });
 
-        // Convert to array and sort by offset relative to user timezone
-        const userOffset = TIMEZONE_OFFSETS[userTimezone];
+        // Convert to array and sort by offset relative to SELECTED timezone (not user timezone)
+        const selectedOffset = TIMEZONE_OFFSETS[selectedTimezone];
         const sortedTimezones = Object.values(groups)
             .map(group => ({
                 ...group,
-                relativeOffset: group.offset - userOffset
+                relativeOffset: group.offset - selectedOffset
             }))
             .sort((a, b) => b.relativeOffset - a.relativeOffset); // Sort descending so positive offsets are at top
 
@@ -86,14 +86,13 @@ export default function TimezoneChart({ people }) {
             timezoneData: sortedTimezones,
             peopleWithoutTimezone: withoutTimezone
         };
-    }, [people, userTimezone]);
+    }, [people, selectedTimezone]);
 
-    // Calculate current time position (0-24 hours as percentage)
+    // Calculate current time position (0-24 hours as percentage) relative to selected timezone
     const getCurrentTimePosition = () => {
-        // Use the same timezone calculation method as getTimeInTimezone for consistency
-        const userTime = getTimeInTimezone(userTimezone);
-        const hours = userTime.getHours();
-        const minutes = userTime.getMinutes();
+        const selectedTime = getTimeInTimezone(selectedTimezone);
+        const hours = selectedTime.getHours();
+        const minutes = selectedTime.getMinutes();
         return ((hours + minutes / 60) / 24) * 100;
     };
 
@@ -110,7 +109,7 @@ export default function TimezoneChart({ people }) {
     const getTimeInTimezoneForHour = (timezone, hourPosition) => {
         // Get current date in user timezone
         const now = new Date();
-        const userTime = getTimeInTimezone(userTimezone);
+        const userTime = getTimeInTimezone(selectedTimezone);
 
         // Create a date object for the hovered time in user timezone
         const hoveredDate = new Date(userTime);
@@ -119,7 +118,7 @@ export default function TimezoneChart({ people }) {
         hoveredDate.setSeconds(0);
 
         // Calculate the time difference between user timezone and target timezone
-        const userOffset = TIMEZONE_OFFSETS[userTimezone];
+        const userOffset = TIMEZONE_OFFSETS[selectedTimezone];
         const targetOffset = TIMEZONE_OFFSETS[timezone];
         const offsetDiff = (targetOffset - userOffset) * 3600000; // Convert hours to milliseconds
 
@@ -161,19 +160,142 @@ export default function TimezoneChart({ people }) {
         return hour >= 9 && hour < 17;
     };
 
-    // Generate hour labels (every 3 hours)
+    // Format hover time for display in same format as timeline
+    const formatHoverTime = (hourPosition) => {
+        const hours = Math.floor(hourPosition);
+        const minutes = Math.floor((hourPosition % 1) * 60);
+
+        let displayHour = hours;
+        const ampm = hours < 12 ? 'AM' : 'PM';
+
+        if (hours === 0) displayHour = 12;
+        else if (hours > 12) displayHour = hours - 12;
+
+        return `${displayHour}:${String(minutes).padStart(2, '0')} ${ampm}`;
+    };
+
+    // Format time range for display
+    const formatTimeRange = (startHour, endHour) => {
+        const formatHour = (hour) => {
+            const h = Math.floor(hour);
+            const m = Math.floor((hour % 1) * 60);
+            let displayHour = h;
+            const ampm = h < 12 ? 'AM' : 'PM';
+
+            if (h === 0) displayHour = 12;
+            else if (h > 12) displayHour = h - 12;
+
+            return `${displayHour}:${String(m).padStart(2, '0')} ${ampm}`;
+        };
+
+        return `${formatHour(startHour)} - ${formatHour(endHour)}`;
+    };
+
+    // Calculate periods with no overlapping working hours
+    const getNoWorkingHoursPeriods = () => {
+        // Create array to track which hours have working people (using 0.5 hour increments for precision)
+        const PRECISION = 0.5; // 30-minute increments
+        const TOTAL_SLOTS = 24 / PRECISION; // 48 slots for 30-minute increments
+        const workingHours = new Array(TOTAL_SLOTS).fill(false);
+
+        // For each timezone, mark their working hours on the user timeline
+        timezoneData.forEach(tzGroup => {
+            const timezoneOffset = tzGroup.relativeOffset;
+
+            // Convert timezone's 9am-5pm to positions on user's timeline
+            // Working hours are 9:00 AM to 5:00 PM (8 hours)
+            let workingStartInUserTime = 9 - timezoneOffset;
+            let workingEndInUserTime = 17 - timezoneOffset;
+
+            // Handle day wraparound
+            while (workingStartInUserTime < 0) workingStartInUserTime += 24;
+            while (workingEndInUserTime < 0) workingEndInUserTime += 24;
+            while (workingStartInUserTime >= 24) workingStartInUserTime -= 24;
+            while (workingEndInUserTime >= 24) workingEndInUserTime -= 24;
+
+            // Mark working hours in the array
+            if (workingEndInUserTime > workingStartInUserTime) {
+                // Normal case - working hours don't cross midnight
+                const startSlot = Math.floor(workingStartInUserTime / PRECISION);
+                const endSlot = Math.ceil(workingEndInUserTime / PRECISION);
+                for (let slot = startSlot; slot < endSlot && slot < TOTAL_SLOTS; slot++) {
+                    workingHours[slot] = true;
+                }
+            } else {
+                // Working hours cross midnight - split into two parts
+                // Part 1: from start to end of day
+                const startSlot1 = Math.floor(workingStartInUserTime / PRECISION);
+                for (let slot = startSlot1; slot < TOTAL_SLOTS; slot++) {
+                    workingHours[slot] = true;
+                }
+                // Part 2: from start of day to end
+                const endSlot2 = Math.ceil(workingEndInUserTime / PRECISION);
+                for (let slot = 0; slot < endSlot2; slot++) {
+                    workingHours[slot] = true;
+                }
+            }
+        });
+
+        // Find continuous periods where no one is working
+        const noWorkPeriods = [];
+        let startSlot = null;
+
+        for (let slot = 0; slot < TOTAL_SLOTS; slot++) {
+            if (!workingHours[slot]) {
+                if (startSlot === null) {
+                    startSlot = slot;
+                }
+            } else {
+                if (startSlot !== null) {
+                    const startHour = startSlot * PRECISION;
+                    const endHour = slot * PRECISION;
+                    noWorkPeriods.push({
+                        start: startHour,
+                        end: endHour,
+                        startPos: (startHour / 24) * 100,
+                        width: ((endHour - startHour) / 24) * 100
+                    });
+                    startSlot = null;
+                }
+            }
+        }
+
+        // Handle case where no-work period extends to end of day
+        if (startSlot !== null) {
+            const startHour = startSlot * PRECISION;
+            const endHour = 24;
+            noWorkPeriods.push({
+                start: startHour,
+                end: endHour,
+                startPos: (startHour / 24) * 100,
+                width: ((endHour - startHour) / 24) * 100
+            });
+        }
+
+        return noWorkPeriods;
+    };
+
+    const noWorkingHoursPeriods = timezoneData.length > 0 ? getNoWorkingHoursPeriods() : [];
+
+    // Generate hour labels (every 3 hours) - Full 24 hour cycle
     const hourLabels = [];
-    for (let hour = 0; hour < 24; hour += 3) {
-        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    for (let hour = 0; hour <= 24; hour += 3) {
+        const displayHour = hour === 0 || hour === 24 ? 12 : hour > 12 ? hour - 12 : hour;
         const ampm = hour < 12 ? 'AM' : 'PM';
         if (hour === 0) hourLabels.push(`12 AM`);
         else if (hour === 12) hourLabels.push(`12 PM`);
+        else if (hour === 24) hourLabels.push(`12 AM`);
         else hourLabels.push(`${displayHour} ${ampm}`);
     }
 
     const barHeight = 60;
-    const chartHeight = Math.max((timezoneData.length * (barHeight + 8)) + 100, 200);
+    const chartHeight = Math.max((timezoneData.length * (barHeight + 8)) + 50, 200);
     const currentTimePos = getCurrentTimePosition();
+
+    // Handle timezone selection
+    const handleTimezoneClick = (timezone) => {
+        setSelectedTimezone(timezone);
+    };
 
     if (timezoneData.length === 0) {
         return (
@@ -190,7 +312,7 @@ export default function TimezoneChart({ people }) {
                         Add location information to your contacts to see timezone comparisons.
                     </p>
                     {peopleWithoutTimezone.length > 0 && (
-                        <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="bg-orange-500 rounded-lg p-4">
                             <p className="text-sm text-gray-600 mb-2">
                                 {peopleWithoutTimezone.length} people without timezone information:
                             </p>
@@ -229,13 +351,42 @@ export default function TimezoneChart({ people }) {
                     onMouseMove={handleMouseMove}
                     onMouseLeave={handleMouseLeave}
                 >
+                    {/* Yellow background for periods with no overlapping working hours */}
+                    {noWorkingHoursPeriods.map((period, index) => (
+                        <div
+                            key={index}
+                            className="absolute top-0 bottom-0 bg-yellow-200 opacity-60 z-5"
+                            style={{
+                                left: `${period.startPos}%`,
+                                width: `${period.width}%`
+                            }}
+                        />
+                    ))}
+
+                    {/* Text labels for no overlapping working hours periods */}
+                    {noWorkingHoursPeriods.map((period, index) => (
+                        <div
+                            key={`label-${index}`}
+                            className="absolute bottom-0 font-bold text-black-800 bg-yellow-100 px-2 py-1 rounded shadow-sm z-[100]"
+                            style={{
+                                left: `${period.startPos}%`,
+                                width: `${period.width}%`,
+                                minWidth: '120px',
+                            }}
+                        >
+                            <div className="text-center whitespace-nowrap overflow-hidden text-ellipsis">
+                                {formatTimeRange(period.start, period.end)}
+                            </div>
+                        </div>
+                    ))}
+
                     {/* Current time line */}
                     <div
                         className="absolute top-0 bottom-0 w-1 bg-red-600 z-10 shadow-lg"
                         style={{ left: `${currentTimePos}%` }}
                     >
                         <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-red-600 text-white text-xs px-3 py-1 rounded-md whitespace-nowrap font-bold shadow-lg">
-                            {formatTime(currentTime)} (Your Time)
+                            {formatTime(getTimeInTimezone(selectedTimezone))} ({selectedTimezone} - Center)
                         </div>
                     </div>
 
@@ -246,7 +397,10 @@ export default function TimezoneChart({ people }) {
                             style={{ left: `${hoverPosition.percentage}%` }}
                         >
                             <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white text-xs px-2 py-1 rounded whitespace-nowrap font-bold">
-                                {Math.floor(hoverPosition.hourPosition)}:{String(Math.floor((hoverPosition.hourPosition % 1) * 60)).padStart(2, '0')}
+                                {formatHoverTime(hoverPosition.hourPosition)}
+                            </div>
+                            <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-3 py-1 rounded-md whitespace-nowrap font-medium shadow-lg">
+                                Preview time across all timezones
                             </div>
                         </div>
                     )}
@@ -254,7 +408,7 @@ export default function TimezoneChart({ people }) {
                     {/* Timezone bars */}
                     {timezoneData.map((tzGroup, index) => {
                         const yPosition = index * (barHeight + 8);
-                        const isUserTimezone = tzGroup.timezone === userTimezone;
+                        const isUserTimezone = tzGroup.timezone === selectedTimezone;
                         const currentTzTime = getTimeInTimezone(tzGroup.timezone);
                         const tzTimePos = ((currentTzTime.getHours() + currentTzTime.getMinutes() / 60) / 24) * 100;
                         const isWorkingHours = isBusinessHours(currentTzTime);
@@ -271,8 +425,8 @@ export default function TimezoneChart({ people }) {
                         const timezoneOffset = tzGroup.relativeOffset; // Hours difference from user timezone
 
                         // Convert timezone's 9am to position on user's timeline
-                        let workingHoursStart = 9 - timezoneOffset; // 9am in this timezone, shown on user timeline
-                        let workingHoursEnd = 17 - timezoneOffset; // 5pm in this timezone, shown on user timeline
+                        let workingHoursStart = 9 - timezoneOffset;
+                        let workingHoursEnd = 17 - timezoneOffset;
 
                         // Handle day wraparound
                         if (workingHoursStart < 0) workingHoursStart += 24;
@@ -283,27 +437,16 @@ export default function TimezoneChart({ people }) {
                         const workingHoursStartPos = (workingHoursStart / 24) * 100;
                         const workingHoursEndPos = (workingHoursEnd / 24) * 100;
 
-                        // Buffer hours (8-9am and 5-6pm in timezone's local time)
-                        let bufferStart = 8 - timezoneOffset;
-                        let bufferEnd = 18 - timezoneOffset;
-
-                        if (bufferStart < 0) bufferStart += 24;
-                        if (bufferEnd < 0) bufferEnd += 24;
-                        if (bufferStart >= 24) bufferStart -= 24;
-                        if (bufferEnd >= 24) bufferEnd -= 24;
-
-                        const bufferStartPos = (bufferStart / 24) * 100;
-                        const bufferEndPos = (bufferEnd / 24) * 100;
-
                         return (
                             <div key={tzGroup.timezone} className="absolute w-full" style={{ top: `${yPosition}px` }}>
                                 {/* Timezone bar */}
                                 <div
-                                    className={`relative rounded-lg border-3 flex items-center transition-all duration-300 shadow-md overflow-hidden ${isUserTimezone
+                                    className={`relative rounded-lg border-3 flex items-center transition-all duration-300 shadow-md overflow-hidden cursor-pointer ${isUserTimezone
                                         ? 'bg-blue-50 border-blue-600 shadow-blue-200'
                                         : 'bg-gray-100 border-gray-400 hover:bg-gray-50 hover:border-gray-500'
                                         }`}
                                     style={{ height: `${barHeight}px` }}
+                                    onClick={() => handleTimezoneClick(tzGroup.timezone)}
                                 >
                                     {/* Base background - neutral gray */}
                                     <div className="absolute inset-0 bg-gray-200"></div>
@@ -312,16 +455,6 @@ export default function TimezoneChart({ people }) {
                                     {workingHoursEnd > workingHoursStart ? (
                                         // Normal case - working hours don't cross midnight
                                         <>
-                                            {/* Pre-work buffer gradient (8-9am) */}
-                                            <div
-                                                className="absolute top-0 bottom-0"
-                                                style={{
-                                                    left: `${bufferStartPos}%`,
-                                                    width: `${((workingHoursStart - bufferStart + 24) % 24) / 24 * 100}%`,
-                                                    background: 'linear-gradient(90deg, rgba(156, 163, 175, 0.8) 0%, rgba(34, 197, 94, 0.4) 100%)'
-                                                }}
-                                            />
-
                                             {/* Core working hours (9am-5pm) */}
                                             <div
                                                 className="absolute top-0 bottom-0 bg-emerald-400"
@@ -329,16 +462,6 @@ export default function TimezoneChart({ people }) {
                                                     left: `${workingHoursStartPos}%`,
                                                     width: `${((workingHoursEnd - workingHoursStart + 24) % 24) / 24 * 100}%`,
                                                     opacity: isUserTimezone ? '0.7' : '0.5'
-                                                }}
-                                            />
-
-                                            {/* Post-work buffer gradient (5-6pm) */}
-                                            <div
-                                                className="absolute top-0 bottom-0"
-                                                style={{
-                                                    left: `${workingHoursEndPos}%`,
-                                                    width: `${((bufferEnd - workingHoursEnd + 24) % 24) / 24 * 100}%`,
-                                                    background: 'linear-gradient(90deg, rgba(34, 197, 94, 0.4) 0%, rgba(156, 163, 175, 0.8) 100%)'
                                                 }}
                                             />
                                         </>
@@ -367,15 +490,6 @@ export default function TimezoneChart({ people }) {
                                         </>
                                     )}
 
-                                    {/* Current time indicator for this timezone - Much higher contrast */}
-                                    <div
-                                        className={`absolute top-0 bottom-0 w-2 rounded-full z-20 shadow-lg ${isWorkingHours
-                                            ? 'bg-emerald-700 border-2 border-emerald-900'
-                                            : 'bg-amber-600 border-2 border-amber-800'
-                                            }`}
-                                        style={{ left: `${tzTimePos}%` }}
-                                    />
-
                                     {/* Hover time indicator */}
                                     {isHovering && hoverPosition && (
                                         <div
@@ -394,7 +508,6 @@ export default function TimezoneChart({ people }) {
                                                 <span className={`font-black text-xl ${isUserTimezone ? 'text-blue-800' : 'text-gray-800'
                                                     }`}>
                                                     {tzGroup.timezone}
-                                                    {isUserTimezone && <span className="text-sm ml-2 font-bold">(You)</span>}
                                                 </span>
                                                 <span className={`text-sm font-bold ${isUserTimezone ? 'text-blue-600' : 'text-gray-600'
                                                     }`}>
@@ -440,30 +553,19 @@ export default function TimezoneChart({ people }) {
                 <div className="mt-8 flex flex-wrap gap-6 text-sm">
                     <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-red-600 rounded border border-red-800"></div>
-                        <span className="font-semibold text-gray-800">Current time in your timezone</span>
+                        <span className="font-semibold text-gray-800">Current time in center timezone</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-blue-500 rounded border border-blue-700"></div>
                         <span className="font-semibold text-gray-800">Hover preview time</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-emerald-700 rounded border border-emerald-900"></div>
-                        <span className="font-semibold text-gray-800">Working hours</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-amber-600 rounded border border-amber-800"></div>
-                        <span className="font-semibold text-gray-800">Off hours</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div
-                            className="w-4 h-4 rounded border border-emerald-600"
-                            style={{ background: 'linear-gradient(90deg, rgba(156, 163, 175, 0.8) 0%, rgba(34, 197, 94, 0.6) 100%)' }}
-                        ></div>
-                        <span className="font-semibold text-gray-800">Buffer hours (8-9 AM, 5-6 PM per timezone)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-emerald-400 rounded border border-emerald-600"></div>
                         <span className="font-semibold text-gray-800">Core working hours (9 AM - 5 PM per timezone)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-yellow-200 rounded border border-yellow-400 opacity-60"></div>
+                        <span className="font-semibold text-gray-800">No overlapping working hours</span>
                     </div>
                 </div>
 
