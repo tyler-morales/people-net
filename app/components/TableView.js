@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import AddPersonForm from './people/AddPersonForm';
 import PersonTable from './people/PersonTable';
+import { LiquidButton, LiquidCard } from './ui/LiquidGlass';
 
 export default function TableView({
     people,
@@ -36,7 +37,13 @@ export default function TableView({
 
     const handleAddPerson = (e) => {
         e.preventDefault();
-        if (!newPerson.name.trim()) return;
+        console.log('Form submitted with data:', newPerson);
+
+        if (!newPerson.name.trim()) {
+            console.log('Form validation failed: name is empty');
+            showToast('Please enter a name', 'error');
+            return;
+        }
 
         const personToAdd = {
             ...newPerson,
@@ -46,10 +53,16 @@ export default function TableView({
             ]
         };
 
+        console.log('Person to add:', personToAdd);
+
         // Save undo state before adding
         saveUndoState('add', personToAdd.id, null, newPerson.name, people);
 
-        setPeople(prev => [...prev, personToAdd]);
+        setPeople(prev => {
+            const newPeople = [...prev, personToAdd];
+            console.log('Updated people array:', newPeople);
+            return newPeople;
+        });
 
         // Show success toast
         showToast(`Added ${newPerson.name} to your network!`, 'success');
@@ -79,16 +92,26 @@ export default function TableView({
     };
 
     return (
-        <>
+        <div className="space-y-liquid">
             {/* Add Person Button & Form */}
-            <div className="mb-6">
+            <LiquidCard morphIn>
                 {!showAddForm ? (
-                    <button
-                        onClick={() => setShowAddForm(true)}
-                        className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium cursor-pointer transition-colors duration-200"
-                    >
-                        + Add New Contact
-                    </button>
+                    <div className="text-center">
+                        <LiquidButton
+                            onClick={() => setShowAddForm(true)}
+                            variant="primary"
+                            size="medium"
+                            className="font-semibold text-lg px-8 py-4"
+                        >
+                            <span className="flex items-center gap-3">
+                                <span className="text-2xl">✨</span>
+                                Add New Contact
+                            </span>
+                        </LiquidButton>
+                        <p className="mt-4 text-gray-600 dark:text-gray-400">
+                            Build your network by adding friends, family, colleagues, and acquaintances
+                        </p>
+                    </div>
                 ) : (
                     <AddPersonForm
                         newPerson={newPerson}
@@ -98,17 +121,19 @@ export default function TableView({
                         people={people}
                     />
                 )}
-            </div>
+            </LiquidCard>
 
-            <PersonTable
-                people={people}
-                setPeople={setPeople}
-                showToast={showToast}
-                saveUndoState={saveUndoState}
-                handleFieldFocus={handleFieldFocus}
-                originalValues={originalValues}
-                setOriginalValues={setOriginalValues}
-            />
-        </>
+            <LiquidCard floating>
+                <PersonTable
+                    people={people}
+                    setPeople={setPeople}
+                    showToast={showToast}
+                    saveUndoState={saveUndoState}
+                    handleFieldFocus={handleFieldFocus}
+                    originalValues={originalValues}
+                    setOriginalValues={setOriginalValues}
+                />
+            </LiquidCard>
+        </div>
     );
 } 

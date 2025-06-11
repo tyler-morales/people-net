@@ -3,6 +3,7 @@ import FormDropdown from '../ui/FormDropdown';
 import DynamicCityPicker from '../ui/DynamicCityPicker';
 import { commonCities } from '../../lib/city-data';
 import { getTimezoneFromLocation } from '../../utils/timezone-utils';
+import { LiquidButton } from '../ui/LiquidGlass';
 
 export default function AddPersonForm({
     newPerson,
@@ -66,7 +67,10 @@ export default function AddPersonForm({
                 </button>
             </div>
 
-            <form onSubmit={onSubmit} className="space-y-4">
+            <form onSubmit={(e) => {
+                console.log('Form onSubmit triggered!', e);
+                onSubmit(e);
+            }} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Basic Information */}
                     <div>
@@ -116,13 +120,13 @@ export default function AddPersonForm({
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Description
                         </label>
-                        <FormDropdown
+                        <textarea
                             name="description"
                             value={newPerson.description}
                             onChange={handleChange}
-                            options={getUniqueValues('description')}
-                            placeholder="Enter or select description"
-                            className="border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            rows="3"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            placeholder="Describe this person, their interests, what they do..."
                         />
                     </div>
 
@@ -307,20 +311,25 @@ export default function AddPersonForm({
                     />
                 </div>
 
-                <div className="flex gap-3 pt-4">
-                    <button
+                <div className="flex gap-3 pt-6">
+                    <LiquidButton
                         type="submit"
-                        className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium cursor-pointer transition-colors duration-200"
+                        variant="primary"
+                        className="flex-1 py-3 font-semibold"
                     >
-                        Add Contact
-                    </button>
-                    <button
+                        <span className="flex items-center justify-center gap-2">
+                            <span>✨</span>
+                            Add Contact
+                        </span>
+                    </LiquidButton>
+                    <LiquidButton
                         type="button"
                         onClick={onCancel}
-                        className="bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-lg font-medium cursor-pointer transition-colors duration-200"
+                        variant="secondary"
+                        className="px-8 py-3 font-medium"
                     >
                         Cancel
-                    </button>
+                    </LiquidButton>
                 </div>
             </form>
         </div>

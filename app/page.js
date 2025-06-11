@@ -12,6 +12,7 @@ import QuickNote from "./components/QuickNote";
 import Toast from "./components/Toast";
 import ApiUsageMonitor from "./components/ui/ApiUsageMonitor";
 import ThemeToggle from "./components/ui/ThemeToggle";
+import { LiquidCard } from "./components/ui/LiquidGlass";
 
 export default function Home() {
   const [people, setPeople] = useState([]);
@@ -146,64 +147,77 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
-      {/* Tab Navigation */}
-      <TabNavigation
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        canUndo={canUndo}
-      />
+    <div className="min-h-screen relative">
+      {/* Liquid background with nostalgic gradient */}
+      <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-purple-25 to-pink-50 dark:from-gray-900 dark:via-blue-950 dark:to-purple-950 transition-all duration-500"></div>
 
-      <header className="my-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">🌐 ConnectNet</h1>
-            <h2 className="text-lg text-gray-600 dark:text-gray-400">
-              {getTabSubtitle()}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-              {people.length === 0
-                ? 'Your network is empty. Add your first contact below!'
-                : `${people.length} contact${people.length === 1 ? '' : 's'} in your network`
-              }
-            </p>
-          </div>
-          <ThemeToggle />
-        </div>
-      </header>
+      {/* Floating orbs for ambiance */}
+      <div className="fixed top-20 left-20 w-64 h-64 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
+      <div className="fixed bottom-20 right-20 w-96 h-96 bg-gradient-to-r from-pink-400/15 to-orange-400/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
-      {/* Render content based on active tab */}
-      {activeTab === 'table' ? (
-        <TableView
+      <main className="relative z-10 container-liquid py-8">
+        {/* Tab Navigation */}
+        <TabNavigation
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          canUndo={canUndo}
+        />
+
+        <header className="my-8">
+          <LiquidCard morphIn floating className="border-0">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                  🌐 ConnectNet
+                </h1>
+                <h2 className="text-xl text-gray-700 dark:text-gray-300 font-medium">
+                  {getTabSubtitle()}
+                </h2>
+                <p className="text-base text-gray-600 dark:text-gray-400 mt-2">
+                  {people.length === 0
+                    ? 'Your network is empty. Add your first contact below!'
+                    : `${people.length} contact${people.length === 1 ? '' : 's'} in your network`
+                  }
+                </p>
+              </div>
+              <ThemeToggle />
+            </div>
+          </LiquidCard>
+        </header>
+
+        {/* Render content based on active tab */}
+        {activeTab === 'table' ? (
+          <TableView
+            people={people}
+            setPeople={setPeople}
+            showToast={showToast}
+            saveUndoState={saveUndoState}
+            handleFieldFocus={handleFieldFocus}
+            originalValues={originalValues}
+            setOriginalValues={setOriginalValues}
+          />
+        ) : activeTab === 'graph' ? (
+          <GraphView people={people} />
+        ) : activeTab === 'globe' ? (
+          <GlobeView people={people} />
+        ) : activeTab === 'timezone' ? (
+          <TimezoneChart people={people} />
+        ) : null}
+
+        {/* Floating Quick Note Button */}
+        <QuickNote
           people={people}
           setPeople={setPeople}
           showToast={showToast}
           saveUndoState={saveUndoState}
-          handleFieldFocus={handleFieldFocus}
-          originalValues={originalValues}
-          setOriginalValues={setOriginalValues}
         />
-      ) : activeTab === 'graph' ? (
-        <GraphView people={people} />
-      ) : activeTab === 'globe' ? (
-        <GlobeView people={people} />
-      ) : activeTab === 'timezone' ? (
-        <TimezoneChart people={people} />
-      ) : null}
 
-      {/* Floating Quick Note Button */}
-      <QuickNote
-        people={people}
-        setPeople={setPeople}
-        showToast={showToast}
-        saveUndoState={saveUndoState}
-      />
+        {/* Toast Notification */}
+        <Toast toast={toast} onClose={hideToast} />
 
-      {/* Toast Notification */}
-      <Toast toast={toast} onClose={hideToast} />
-
-      {/* API Usage Monitor */}
-      <ApiUsageMonitor ref={apiMonitorRef} forceVisible={forceShowApiMonitor} />
-    </main>
+        {/* API Usage Monitor */}
+        <ApiUsageMonitor ref={apiMonitorRef} forceVisible={forceShowApiMonitor} />
+      </main>
+    </div>
   );
 }
