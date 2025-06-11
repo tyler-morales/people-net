@@ -1,8 +1,8 @@
-# 🌐 People Net
+# 🌐 ConnectNet
 
-> **A sophisticated graph-based professional network visualization platform built on modern React architecture**
+> **A sophisticated graph-based personal network visualization platform built on modern React architecture**
 
-People Net transforms the complexity of professional relationships into an intuitive, multi-dimensional visualization system. At its core, it's a graph database application with rich UI components that allow users to map, analyze, and interact with their professional networks across spatial, temporal, and relational dimensions.
+ConnectNet transforms the complexity of personal relationships into an intuitive, multi-dimensional visualization system. At its core, it's a graph database application with rich UI components that allow users to map, analyze, and interact with their personal networks across spatial, temporal, and relational dimensions - whether tracking friends, family, neighbors, hobby groups, or any other meaningful connections.
 
 ## 🏗️ Architecture Overview
 
@@ -47,7 +47,7 @@ People Net transforms the complexity of professional relationships into an intui
 ## 🧠 Core Concepts & Data Model
 
 ### Graph Theory Implementation
-People Net implements a **directed graph** where:
+ConnectNet implements a **directed graph** where:
 - **Nodes** represent individuals with rich metadata
 - **Edges** represent relationships with typed connections and strength weights
 - **Traversal algorithms** enable network analysis and visualization
@@ -57,11 +57,11 @@ People Net implements a **directed graph** where:
 {
   id: string,           // Unique identifier (URL-safe)
   name: string,         // Full name
-  team: string,         // Organizational unit
-  company: string,      // Organization
+  group: string,        // Category or group (e.g., "College Friends", "Family")
+  organization: string, // Organization or community
   location: string,     // Geographic location
-  workHours: string,    // Temporal availability window
-  role: string,         // Professional title
+  workHours: string,    // Time zone or availability window
+  description: string,  // Brief description or profession
   notes: string,        // Unstructured metadata
   interactions: array   // List of interaction types
 }
@@ -79,7 +79,7 @@ People Net implements a **directed graph** where:
 ```
 
 ### Relationship Classification System
-- **Connection Types**: `collaborated`, `mentored`, `coordinated`, `reviewed_code`, `led_meeting`, `inspired_me`
+- **Connection Types**: `friend`, `family`, `neighbor`, `shared_interest`, `activity_partner`, `online_friend`, `colleague`, `mentor`, `acquaintance`
 - **Strength Tiers**: `fleeting` → `acquaintance` → `casual` → `working` → `strong` → `core`
 
 ## 🎯 Feature Architecture
@@ -96,7 +96,7 @@ The application implements a **multi-perspective data visualization** approach:
 #### Graph View (`GraphView.js`)
 - **Force-Directed Layout**: Physics-based node positioning
 - **Interactive Zoom/Pan**: Canvas manipulation with gesture support
-- **Dynamic Clustering**: Automatic grouping by team/company
+- **Dynamic Clustering**: Automatic grouping by group/organization
 - **Edge Filtering**: Relationship type and strength-based filtering
 
 #### Globe View (`GlobeView.js`)
@@ -106,10 +106,10 @@ The application implements a **multi-perspective data visualization** approach:
 - **Camera Controls**: Orbital navigation with smooth animations
 
 #### Timezone Chart (`TimezoneChart.js`)
-- **Temporal Analysis**: Working hours overlap calculations
+- **Temporal Analysis**: Availability overlap calculations
 - **Multi-timezone Support**: Global time zone handling
 - **Availability Windows**: Visual scheduling assistance
-- **Interactive Timeline**: Hour-by-hour team availability
+- **Interactive Timeline**: Hour-by-hour contact availability
 
 ### 2. Advanced State Management
 
@@ -139,7 +139,7 @@ const undoStack = [
 #### Graph Algorithms (`graph-utils.js`)
 - **Network Analysis**: Centrality calculations, clustering coefficients
 - **Path Finding**: Shortest path between network nodes
-- **Community Detection**: Automatic team/cluster identification
+- **Community Detection**: Automatic group/cluster identification
 - **Layout Algorithms**: Force-directed positioning with customizable physics
 
 ## 🎨 UI/UX Architecture
@@ -188,7 +188,7 @@ Challenge: Handling localStorage limits and corruption
 Solution: Incremental saves with error recovery and data validation
 
 ### 5. **Timezone Calculations**
-Challenge: Accurate cross-timezone working hour calculations
+Challenge: Accurate cross-timezone availability calculations
 Solution: Native JavaScript `Intl` API with custom overlap algorithms
 
 ## 🚀 Getting Started
@@ -221,7 +221,7 @@ The application will be available at `http://localhost:3000`
 ## 🔮 Architecture Decisions
 
 ### Why Graph-Based?
-Professional networks are inherently graph-structured. Traditional relational models miss the nuanced, multi-dimensional relationships between people.
+Personal networks are inherently graph-structured. Traditional relational models miss the nuanced, multi-dimensional relationships between people in our lives.
 
 ### Why Multi-View?
 Different use cases require different perspectives:
@@ -231,8 +231,18 @@ Different use cases require different perspectives:
 - **Timeline** for temporal coordination
 
 ### Why Client-Side First?
-Professional network data is sensitive. Client-side storage ensures user privacy while maintaining rich functionality.
+Personal network data is sensitive. Client-side storage ensures user privacy while maintaining rich functionality.
+
+## 🌟 Use Cases
+
+**ConnectNet** is perfect for:
+- **Friend Networks**: Track college friends, childhood buddies, and social circles
+- **Family Trees**: Manage extended family relationships and connections
+- **Hobby Communities**: Map connections from gaming groups, book clubs, sports teams
+- **Neighborhood Networks**: Keep track of neighbors and local community members
+- **Professional Networks**: Maintain work relationships and career connections
+- **Online Communities**: Organize digital friendships and virtual relationships
 
 ---
 
-**People Net** represents a sophisticated approach to professional network management, combining graph theory, modern web technologies, and intuitive design to create a powerful tool for understanding and leveraging professional relationships.
+**ConnectNet** represents a sophisticated approach to personal network management, combining graph theory, modern web technologies, and intuitive design to create a powerful tool for understanding and leveraging all types of meaningful relationships in your life.

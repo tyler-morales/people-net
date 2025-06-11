@@ -55,12 +55,12 @@ export default function AddPersonForm({
     };
 
     return (
-        <div className="bg-gray-50 border border-gray-300 rounded-lg p-6">
+        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Add New Person</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Add New Contact</h3>
                 <button
                     onClick={onCancel}
-                    className="text-gray-500 hover:text-gray-700 text-xl cursor-pointer"
+                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl cursor-pointer"
                 >
                     ×
                 </button>
@@ -70,7 +70,7 @@ export default function AddPersonForm({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Basic Information */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Name *
                         </label>
                         <input
@@ -79,50 +79,50 @@ export default function AddPersonForm({
                             value={newPerson.name}
                             onChange={handleChange}
                             required
-                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                             placeholder="Enter full name"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Company
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Organization
                         </label>
                         <FormDropdown
-                            name="company"
-                            value={newPerson.company}
+                            name="organization"
+                            value={newPerson.organization}
                             onChange={handleChange}
-                            options={getUniqueValues('company')}
-                            placeholder="Enter or select company"
-                            className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+                            options={getUniqueValues('organization')}
+                            placeholder="Enter or select organization"
+                            className="border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Team
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Group
                         </label>
                         <FormDropdown
-                            name="team"
-                            value={newPerson.team}
+                            name="group"
+                            value={newPerson.group}
                             onChange={handleChange}
-                            options={getUniqueValues('team')}
-                            placeholder="Enter or select team"
-                            className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+                            options={getUniqueValues('group')}
+                            placeholder="Enter or select group"
+                            className="border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Role
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Description
                         </label>
                         <FormDropdown
-                            name="role"
-                            value={newPerson.role}
+                            name="description"
+                            value={newPerson.description}
                             onChange={handleChange}
-                            options={getUniqueValues('role')}
-                            placeholder="Enter or select role"
-                            className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+                            options={getUniqueValues('description')}
+                            placeholder="Enter or select description"
+                            className="border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
                     </div>
 
@@ -143,14 +143,14 @@ export default function AddPersonForm({
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Work Hours
+                            Time Zone / Availability
                         </label>
                         <FormDropdown
                             name="workHours"
                             value={newPerson.workHours}
                             onChange={handleChange}
                             options={getUniqueValues('workHours')}
-                            placeholder="Enter or select work hours"
+                            placeholder="Enter or select time zone"
                             className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                     </div>
@@ -265,12 +265,15 @@ export default function AddPersonForm({
                         onChange={handleChange}
                         className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                     >
-                        <option value="collaborated">Collaborated</option>
-                        <option value="mentored">Mentored</option>
-                        <option value="coordinated">Coordinated</option>
-                        <option value="reviewed_code">Reviewed Code</option>
-                        <option value="led_meeting">Led Meeting</option>
-                        <option value="inspired_me">Inspired Me</option>
+                        <option value="friend">Friend</option>
+                        <option value="family">Family</option>
+                        <option value="neighbor">Neighbor</option>
+                        <option value="shared_interest">Shared Interest</option>
+                        <option value="activity_partner">Activity Partner</option>
+                        <option value="online_friend">Online Friend</option>
+                        <option value="colleague">Colleague</option>
+                        <option value="mentor">Mentor</option>
+                        <option value="acquaintance">Acquaintance</option>
                     </select>
                 </div>
 
@@ -307,14 +310,14 @@ export default function AddPersonForm({
                 <div className="flex gap-3 pt-4">
                     <button
                         type="submit"
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium cursor-pointer"
+                        className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium cursor-pointer transition-colors duration-200"
                     >
-                        Add Person
+                        Add Contact
                     </button>
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-lg font-medium cursor-pointer"
+                        className="bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-lg font-medium cursor-pointer transition-colors duration-200"
                     >
                         Cancel
                     </button>

@@ -15,16 +15,16 @@ export default function TableView({
     const [showAddForm, setShowAddForm] = useState(false);
     const [newPerson, setNewPerson] = useState({
         name: '',
-        company: '',
-        team: '',
-        role: '',
+        organization: '',
+        group: '',
+        description: '',
         location: '',
         workHours: '',
         notes: '',
         dateMet: new Date().toISOString().split('T')[0],
         connection: {
             source: 'you',
-            type: 'collaborated',
+            type: 'friend',
             strength: 'casual',
             notes: '',
             introducedBy: '',
@@ -57,16 +57,16 @@ export default function TableView({
         // Reset form
         setNewPerson({
             name: '',
-            company: '',
-            team: '',
-            role: '',
+            organization: '',
+            group: '',
+            description: '',
             location: '',
             workHours: '',
             notes: '',
             dateMet: new Date().toISOString().split('T')[0],
             connection: {
                 source: 'you',
-                type: 'collaborated',
+                type: 'friend',
                 strength: 'casual',
                 notes: '',
                 introducedBy: null,
@@ -85,9 +85,9 @@ export default function TableView({
                 {!showAddForm ? (
                     <button
                         onClick={() => setShowAddForm(true)}
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium cursor-pointer"
+                        className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium cursor-pointer transition-colors duration-200"
                     >
-                        + Add New Person
+                        + Add New Contact
                     </button>
                 ) : (
                     <AddPersonForm

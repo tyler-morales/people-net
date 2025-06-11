@@ -419,7 +419,7 @@ export default function QuickNote({ people, setPeople, showToast, saveUndoState 
             {/* Floating Quick Note Button */}
             <button
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-4 right-4 bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-full shadow-lg transition-all duration-200 hover:scale-105 z-50"
+                className="fixed bottom-4 right-4 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-all duration-200 hover:scale-105 z-50"
                 title="Quick Note"
             >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

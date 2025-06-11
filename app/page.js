@@ -11,6 +11,7 @@ import TimezoneChart from "./components/TimezoneChart";
 import QuickNote from "./components/QuickNote";
 import Toast from "./components/Toast";
 import ApiUsageMonitor from "./components/ui/ApiUsageMonitor";
+import ThemeToggle from "./components/ui/ThemeToggle";
 
 export default function Home() {
   const [people, setPeople] = useState([]);
@@ -63,7 +64,7 @@ export default function Home() {
       } else {
         // No saved data, use initial data
         setPeople(initialPeople);
-        showToast('Welcome to PeopleNet! Add your first contact to get started.', 'info');
+        showToast('Welcome to ConnectNet! Add your first contact to get started.', 'info');
       }
     } catch (error) {
       console.error('Error loading from localStorage:', error);
@@ -120,32 +121,32 @@ export default function Home() {
   const getTabSubtitle = () => {
     switch (activeTab) {
       case 'table':
-        return 'Manage and track your professional connections';
+        return 'Manage and track your personal connections';
       case 'graph':
         return 'Visualize your network relationships';
       case 'globe':
         return 'Explore your global connections';
       case 'timezone':
-        return 'See when your team is available across timezones';
+        return 'See when your contacts are available across timezones';
       default:
-        return 'Your professional network hub';
+        return 'Your personal network hub';
     }
   };
 
   // Show loading state until data is loaded
   if (!isLoaded) {
     return (
-      <main className="flex items-center justify-center min-h-screen">
+      <main className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your network...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading your network...</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="">
+    <main className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
       {/* Tab Navigation */}
       <TabNavigation
         activeTab={activeTab}
@@ -154,17 +155,20 @@ export default function Home() {
       />
 
       <header className="my-4">
-        <div>
-          <h1 className="text-4xl font-bold">🌐 PeopleNet</h1>
-          <h2 className="text-lg text-gray-600">
-            {getTabSubtitle()}
-          </h2>
-          <p className="text-sm text-gray-500 mt-1">
-            {people.length === 0
-              ? 'Your network is empty. Add your first contact below!'
-              : `${people.length} contact${people.length === 1 ? '' : 's'} in your network`
-            }
-          </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">🌐 ConnectNet</h1>
+            <h2 className="text-lg text-gray-600 dark:text-gray-400">
+              {getTabSubtitle()}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+              {people.length === 0
+                ? 'Your network is empty. Add your first contact below!'
+                : `${people.length} contact${people.length === 1 ? '' : 's'} in your network`
+              }
+            </p>
+          </div>
+          <ThemeToggle />
         </div>
       </header>
 

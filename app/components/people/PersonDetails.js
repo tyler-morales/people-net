@@ -139,12 +139,15 @@ export default function PersonDetails({
                         onBlur={(e) => handleInlineBlur(e, person.id, 'connection.type')}
                         className="w-full border border-gray-300 rounded px-3 py-2"
                     >
-                        <option value="collaborated">Collaborated</option>
-                        <option value="mentored">Mentored</option>
-                        <option value="coordinated">Coordinated</option>
-                        <option value="reviewed_code">Reviewed Code</option>
-                        <option value="led_meeting">Led Meeting</option>
-                        <option value="inspired_me">Inspired Me</option>
+                        <option value="friend">Friend</option>
+                        <option value="family">Family</option>
+                        <option value="neighbor">Neighbor</option>
+                        <option value="shared_interest">Shared Interest</option>
+                        <option value="activity_partner">Activity Partner</option>
+                        <option value="online_friend">Online Friend</option>
+                        <option value="colleague">Colleague</option>
+                        <option value="mentor">Mentor</option>
+                        <option value="acquaintance">Acquaintance</option>
                     </select>
                 </div>
 

@@ -176,7 +176,7 @@ export default function ColumnFilters({
                 <SelectFilter
                     value={columnFilters.connectionType}
                     onChange={(value) => updateColumnFilter('connectionType', value)}
-                    options={['collaborated', 'mentored', 'coordinated', 'reviewed_code', 'led_meeting', 'inspired_me']}
+                    options={['friend', 'family', 'neighbor', 'shared_interest', 'activity_partner', 'online_friend', 'colleague', 'mentor', 'acquaintance']}
                     label="Connection Type"
                     placeholder="All types"
                     onClear={() => clearFilter('connectionType')}
